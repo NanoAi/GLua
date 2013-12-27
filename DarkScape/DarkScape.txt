@@ -1,0 +1,15 @@
+"Gamemode"
+{
+	"base"		"sandbox"
+	"title"		"DarkScape"
+	"maps"		"^ds_"
+	"menusystem"	"1"
+
+    "author_name"   "HeLLFox_15"
+    "author_email"  "http://steamcommunity.com/profiles/76561198000875949"
+    "author_url"    "https://github.com/KioFox/GLua-Projects/tree/master/DarkScape"
+
+    "icon"  ""
+    "info"  ""
+    "hide"  "0"
+}

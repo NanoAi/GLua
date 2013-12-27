@@ -1,0 +1,12 @@
+"AddonInfo"
+{
+	"name"		"Infected Wars Weapons Pack"
+	"version" 		"1.5"	
+	"author_name" 	"Clavus + LuaTenshi"
+   	"author_email" 	"clavus@clavusstudios.nl"
+   	"author_url" 	"http://www.clavusstudios.nl"
+   	"info" 		"Original Work By Clavus."
+   	"hide" 		"0"
+  	"up_date" 		"n/a" // The date this version was published. Set before release!
+
+}

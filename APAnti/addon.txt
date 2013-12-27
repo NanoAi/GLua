@@ -1,0 +1,11 @@
+"AddonInfo"
+{
+	"name"				"APAnti"
+	"version"			"1.0"
+	"up_date"			"00/00/00"
+	"author_name"		"LuaTenshi"
+	"author_email"		"luatenshi@gmail.com"
+	"author_url"		"http://steamcommunity.com/profiles/76561198096713277"
+	"info"				"Advanced AntiPropKill and more."
+	"override"			"0"
+}
