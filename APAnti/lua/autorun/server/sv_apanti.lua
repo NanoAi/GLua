@@ -4,7 +4,7 @@
 -- Contact: luatenshi@gmail.com
 ----------------------------------------------------------------------------------------------------------------------------------------------------*/
 
-APA = APA or {} -- Do not remove. (Github hates me...)
+APA = APA or {} -- Do not remove.
 APA.Ghost = APA.Ghost or {} -- Do not remove.
 APA.Settings = APA.Settings or {} -- Do not remove.
 APA.Settings.FPP = APA.Settings.FPP or {} -- Do not remove.
@@ -16,7 +16,7 @@ APA.Settings.FPP = APA.Settings.FPP or {} -- Do not remove.
 
 -- Setting this to 1 will enable Anti Prop Kill, setting it to 0 will disable it!
 APA.Settings.AntiPK = 1
--- Setting this to 1 will block some explosive barrels, setting it to 2 will block env_explosion, while setting it to 0 will disable it!
+-- Setting this to 1 will block some explosive barrels, while setting it to 0 will disable it!
 APA.Settings.BlockExplosions = 1
 -- Setting this to 1 will enable Anti Prop Push, setting it to 2 will make this also check constrains, while setting it to 0 will disable it!
 APA.Settings.AntiPush = 0
@@ -91,19 +91,6 @@ local function APAntiLoad()
 		return atker
 	end
 	
-	/*
-	MsgAll("\n<|||APAnti Is Settings|||>\n")
-	MsgAll("\n<||| APAnti PropKill: " .. tostring(APA.Settings.AntiPK) .. "|||>\n")
-	MsgAll("\n<||| APAnti Explosions: " .. tostring(APA.Settings.BlockExplosions) .. "|||>\n")
-	MsgAll("\n<||| APAnti Pushing: " .. tostring(APA.Settings.AntiPush) .. "|||>\n")
-	MsgAll("\n<||| APAnti Ghosting: " .. tostring(APA.Settings.GhostOnSpawn) .. "|||>\n")
-	MsgAll("\n<||| APAnti Fling: " .. tostring(APA.Settings.Nerf) .. "|||>\n")
-	MsgAll("\n<||| APAnti Huge Props: " .. tostring(APA.Settings.FPP.AutoBlock) .. "|||>\n")
-	MsgAll("\n<||| APAnti Huge Props Scale: " .. tostring(APA.Settings.FPP.ABSize) .. "|||>\n")
-	MsgAll("\n<||| APAnti Blacklist: " .. tostring(APA.Settings.Blacklist) .. "|||>\n")
-	MsgAll("\n<||| APAnti Whitelist: " .. tostring(APA.Settings.Whitelist) .. "|||>\n")
-	*/
-	
 	function APA.antiPk( target, dmginfo )
 		if( APA.Settings.AntiPK >= 1 ) then
 			local entClass = dmginfo:GetInflictor():GetClass()
@@ -162,24 +149,10 @@ local function APAntiLoad()
 		end)
 	end
 
-	---Block-More-Explosions---
-	if APA.Settings.BlockExplosions >= 2 then
-		hook.Add( "Think", "APNoMoBoom", function()
-			for _,v in pairs(ents.FindByClass("env_explosion")) do
-				if(v and IsValid(v)) then
-					v:Fire( "Kill", "", 0 )
-				end
-				---------------------------------
-				if(v and IsValid(v)) then
-					v:Remove()
-				end
-			end
-		end)
-	end
-
 	---Ghosting-Stuff---
 	
 	function APA.Ghost.Force( ent )
+	-- Used for ghosting a prop when it spawns in theory we could have FPPs anti-spam take care of this but this lets people build without their console getting spammed with "your prop has been ghosted".
 		if( ent:IsValid() and !ent:IsPlayer() and !ent:IsWorld() ) then
 			ent.APGhost = true
 			ent.OldCollisionGroup = ent:GetCollisionGroup()
@@ -202,12 +175,13 @@ local function APAntiLoad()
 			local plyEnt = APA.FindOwner( ent )		local picker = picker
 			if( plyEnt ~= nil and (plyEnt:IsValid() and plyEnt:IsPlayer()) ) then
 				if( spoof or ( ( plyEnt == picker ) or ( picker:IsAdmin() or picker:IsSuperAdmin() ) ) ) then
+--					|_ Used for the anti-trap makes it so the prop is ghosted. |_ Admins and SuperAdmins can pick up other peoples props so...
 					ent.APGhost = true
 					ent.OldCollisionGroup = ent:GetCollisionGroup()
 					ent:SetRenderMode(RENDERMODE_TRANSALPHA)
 					ent:DrawShadow(false)
 					ent.OldColor = ent.OldColor or ent:GetColor()
-					ent:SetColor(Color(255, 255, 255, ent.OldColor.a - 70))
+					ent:SetColor(Color(255, 255, 255, ent.OldColor.a - 70)) -- Make the prop slightly faded to show that its ghosted.
 					
 					if( APA.Settings.APCollision <= 1 ) then
 						ent:SetCollisionGroup(COLLISION_GROUP_WEAPON)
@@ -227,7 +201,7 @@ local function APAntiLoad()
 		local mins, maxs = ent:LocalToWorld(ent:OBBMins( )), ent:LocalToWorld(ent:OBBMaxs( ))
 		local cube = ents.FindInBox( mins, maxs )
 		for _,v in pairs(cube) do 
-			if( ( IsValid(v) and v:GetModel() and v != ent ) and v:GetClass() != "physgun_beam" ) then
+			if( ( IsValid(v) and v:GetModel() and v != ent ) and ( v:GetClass() != "physgun_beam" and !v:IsWorld() ) ) then
 				local PhysObj = v:GetPhysicsObject()
 				if( IsValid(PhysObj) ) then
 					if( PhysObj:IsMotionEnabled() ) then
@@ -263,7 +237,17 @@ local function APAntiLoad()
 	end
 	
 	--PHYSGUN-DROP--
-	hook.Add( "PhysgunDrop", "APAntiPropPush-Drop", function( picker, ent )
+	/*
+	-- Perhapse a better method of checking if a prop needs unghosting.
+	hook.Add( "PhysgunDrop", "APAntiPropPush-Drop", function( picker, ent ) -- We always want to unghost props if they are ghosted.
+		if( !ent.APGhostOff ) then
+			APA.Ghost.Off( picker, ent, false )
+			ent.APGhostOff = true
+		end
+	end)
+	*/
+	
+	hook.Add( "PhysgunDrop", "APAntiPropPush-Drop", function( picker, ent ) -- We always want to unghost props if they are ghosted.
 		if( ( !ent:IsPlayer() and !ent:IsNPC() ) and picker != ent ) then
 			APA.Ghost.Off( picker, ent, false )
 			ent.APGhostOff = true
