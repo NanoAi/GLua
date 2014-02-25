@@ -1,0 +1,13 @@
+{
+	"title"		:	"APAnti",
+	"type"		:	"tool",
+	"tags"		:	[ "build", "fun" ],
+	"ignore"	:
+	[
+		"*.psd",
+		"*.vcproj",
+		"*.svn*",
+		"*.bat*",
+		"addon.txt*"
+	]
+}
