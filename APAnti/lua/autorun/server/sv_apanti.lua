@@ -448,7 +448,7 @@ local function APAntiLoad()
 						if( ply:IsValid() ) then 
 							ply:ChatPrint("That prop is now blocked, thanks!") 
 							ply:SendLua([[notification.AddLegacy( "That prop is now blocked, thanks!", NOTIFY_ERROR, 10 )]])
-							if APA.Settings.Sounds >= 1 then ply:SendLua([[surface.PlaySound("ambient/alarms/klaxon1.wav")]]) end
+							if APA.Settings.FPP.Sounds >= 1 then ply:SendLua([[surface.PlaySound("ambient/alarms/klaxon1.wav")]]) end
 						end
 						if( ent:IsValid() ) then ent:Remove() end
 					end
