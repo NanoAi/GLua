@@ -484,18 +484,8 @@ local function APAntiLoad()
 		end
 	end)
 
-	hook.Add("PlayerInitialSpawn", function( ply ) -- Is it bad if I want to let people know that the server is running my addon?
-		if ply:SteamID() == "STEAM_0:1:68223774" then -- Please don't change the ID here.
-			timer.Simple(3.5, function()
-				ply:ChatPrint("This server is running APAnti made by you.")
-				for _,v in pairs(player.GetAll()) do
-					v:SendLua([[chat.AddText(Color(255,180,0), "Yes, I am the real LuaTenshi!")]]) -- I like easter eggs okay...
-				end
-			end)
-		else
-			timer.Simple(3.5, function() ply:ChatPrint("This server is running APAnti by LuaTenshi.") end)
-		end
-	end)
+	hook.Add("PlayerInitialSpawn", function( ply ) timer.Simple(3.5, function() ply:ChatPrint("This server is running APAnti by LuaTenshi.") end) end)
+	-- Is it bad if I want to let people know that the server is running my addon?
 
 	MsgAll("\n<|||APAnti Is Now Running!|||>\n")
 	hook.Remove("PlayerConnect", "APAnti-Execution-Hook")
