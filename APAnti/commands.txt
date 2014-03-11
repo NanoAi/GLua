@@ -1,0 +1,37 @@
+apa_antipk :: Setting this to 1 will enable Anti Prop Kill, setting it to 0 will disable it!)
+
+[COMING SOON] apa_alertadmins :: Setting this to 1 will alert admins when a player hits another player with a prop. Setting it to 0 will disable it.) - COMING SOON
+
+[COMING SOON] apa_alertadmins_threshold :: How much damage should the prop do for admins to be notified. (Default: 80) (Requires: APA.Settings.AlertAdmins to be enabled.)) - COMING SOON
+
+apa_antipk_punish :: Setting this to 1 will hurt the person who through the prop!)
+
+apa_vehiclesdonthurt :: Setting this to 1 will stop vehicles from doing damage.)
+
+apa_blockexplosions :: Setting this to 1 will block explosions, setting it to 0 will disable it!)
+
+apa_nocollidevehicles :: Setting this to 1 will make vehicles not collide with players.)
+
+apa_antipush :: Setting this to 1 will enable Anti Prop Push, setting it to 2 will make this also check constrains, while setting it to 0 will disable it!)
+
+apa_apcollision :: Setting this to 1 will make props phase through players only, setting it to 0 will make props phase through every thing! (Requires: apa_antipush to be set to 1!))
+
+apa_ghostonspawn :: Setting this to 1 will make it so that props are ghosted when they spawn, while setting it to 0 will disable it!)
+
+apa_nerf :: Setting this to 1 will make it impossible to fling props, while setting it to 0 will allow you to fling props normally. Note: Setting physgun_maxSpeed to 400 (Default: 5000), will make this work better, and limmit how fast people can move props with their physgun.)
+
+apa_fpp_autoblock :: Setting this to true will attempt to automatically block huge props, setting this to false will disable it! (Requires: Falco's Prop Protection!))
+
+apa_fpp_absize :: How big a prop should be before it is blocked. (Requires: apa_fpp_autoblock to be set to 1!))
+
+apa_fpp_sounds :: Setting this to 1 will make an error sound, when a prop is autoblocked.)
+
+apa_blacklist :: Set to 1 to enable the Blacklist, and to 0 to disable it!)
+
+apa_whitelist :: Set to 1 to enable the Whitelist, and to 0 to disable it!)
+
+apa_nocollideweapons :: Set to 1 to make weapons not collide with any thing except the world, and set to 0 to make weapons collide like normal.)
+
+apa_autofreeze :: Set to 1 to automatically freeze props over time, and set to 0 to disable. (Requires: Map restart.))
+
+apa_autofreeze_time :: How long to wait before freezing all props. (Default: 300) (Requires: apa_autofreeze to be set to 1!))
