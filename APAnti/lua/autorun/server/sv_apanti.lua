@@ -526,7 +526,7 @@ local function APAntiLoad()
 	--PHYSGUN-DROP--
 
 	hook.Add( "PhysgunDrop", "APAntiPropPush-Drop", function( picker, ent ) -- We always want to unghost props if they are ghosted.
-		if( !APA.IsWorld( ent ) and picker != ent ) then
+		if( APA.CanPickup( picker, ent ) and picker != ent ) then
 			if APA.Settings.AntiPush <= 0 then APA.Ghost.Off( picker, ent, true ) end -- Unghost props a little faster.
 			ent.APGhostOff = true
 		end
@@ -535,7 +535,7 @@ local function APAntiLoad()
 	--PHYSGUN-PICKUP--
 	hook.Add( "PhysgunPickup", "APAntiPropPush-Pickup", function( picker, ent )
 		if( APA.Settings.AntiPush >= 1 ) then
-			if( !APA.IsWorld( ent ) and picker != ent ) then
+			if( APA.CanPickup( picker, ent ) and picker != ent ) then
 				APA.Ghost.On( picker, ent, true )
 				ent.APGhostOff = false
 			end
