@@ -568,7 +568,7 @@ local function APAntiLoad()
 	
 	if APA.Settings.AutoFreezeTime:GetInt() < 60 then APA.Settings.AutoFreezeTime = 60 end
 	timer.Create( "APAntiAutoFreezeTimer", APA.Settings.AutoFreezeTime:GetInt(), 0, function() 
-		if PA.Settings.AutoFreeze >= 1 then
+		if APA.Settings.AutoFreeze >= 1 then
 			for _,ent in pairs(ents.FindByClass("prop_physics")) do
 				if ent and IsValid(ent) then
 					local phys = ent:GetPhysicsObject()
