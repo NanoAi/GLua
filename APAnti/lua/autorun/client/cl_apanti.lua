@@ -5,8 +5,7 @@
 ----------------------------------------------------------------------------------------------------------------------------------------------------*/
 
 local function escape(s)
-	return s:gsub( "%%", "<p>" ) 
-	-- string.gsub(string.gsub(s,'[%-%.%+%[%]%(%)%$%^%%%?%*]','%%%1'),'%z','%%z')
+	return s:gsub( "%%", "<p>" )
 end
 
 net.Receive("sMsgStandard", function()
@@ -26,7 +25,7 @@ net.Receive("sMsgStandard", function()
 	end
 
 	if string.len(h) > 0 then
-		local h = escape(s)
+		h = escape(h)
 		h = string.format(h)
 	end
 	-------------------------
@@ -61,9 +60,19 @@ net.Receive("sMsgAdmins", function()
 end)
 
 net.Receive("sAlertNotice", function()
-	local str, type, time, alert = net.ReadString(), net.ReadInt(), net.ReadFloat(), net.ReadInt()
-	notification.AddLegacy( net.ReadString(), net.ReadInt(), net.ReadFloat() )
-	if alert == 1 then
+	local a,b,c,d = net.ReadString(), net.ReadFloat(), net.ReadFloat(), net.ReadFloat()
+
+	if not a then return end
+	if not c then return end
+	if not b then b = 1 end
+	if not d then d = 0 end
+
+	a = escape(a)
+	a = string.format(a)
+
+	notification.AddLegacy( a, b, c )
+
+	if d == 1 then
 		surface.PlaySound("ambient/alarms/klaxon1.wav")
 	end
 end)
