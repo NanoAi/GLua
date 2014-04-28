@@ -8,6 +8,7 @@
 		"*.vcproj",
 		"*.svn*",
 		"*.bat*",
-		"addon.txt*"
+		"addon.txt*",
+		"commands.txt*"
 	]
 }
