@@ -179,7 +179,7 @@ function _S( s, i )
 	return nil
 end
 
-_p, _s = nil, nil
+_p, _px, _s, _s1 = nil, nil, nil, nil
 function selectionLoop( s, i )
 	local s = tobool(s)
 	local c, t, r = {}, util.me._ulxSelection, true
