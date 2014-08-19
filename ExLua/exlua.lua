@@ -61,7 +61,7 @@ if CLIENT then
 					return true
 				elseif key == KEY_ENTER then
 					if not table.HasValue(pastCommands, string.Left(str, 1000)) then
-						if #pastCommands <= 5 then
+						if #pastCommands <= 50 then
 							table.insert(pastCommands, string.Left(str, 1000))
 						else
 							table.Empty(pastCommands)
@@ -218,7 +218,7 @@ setmetatable( ExLua, {__index = function(t, k)
 	local tr, _ = ULib.getUser(tostring(k),true,util.me)
 	if tr then
 		return tr 
-	elseif string.len(k) <= 3 and string.Left(k) == "_s" then
+	elseif string.len(k) <= 3 and string.Left(k,2) == "_s" then
 		local v = string.Replace(k, "_s", "")
 		if v and string.len(v) > 0 then 
 			return selectionLoop(tonumber(v))
@@ -249,7 +249,7 @@ function gsel(n) local t = util.me._ulxSelection if type(n) == "number" then ret
 
 setfenv(1, _G) -- Back to the global.
 -- Make it Safe
-ExLua.setfenv, ExLua.ulx, ExLua.FAdmin, ExLua.fadmin = nil, nil, nil, nil
+ExLua.setfenv, ExLua.ulx, ExLua.FAdmin, ExLua.fadmin, ExLua.game = nil, nil, nil, nil, nil
 
 function ulx.exlua( calling_ply, str )
 	local tab, out, s, p, err = {}, "", ""
