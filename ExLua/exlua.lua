@@ -154,7 +154,7 @@ H.r = hook.Run
 H.c = hook.Call
 H.g = hook.GetTable
 
-function _I(ObjectTable)
+function I(ObjectTable)
 	if (not ObjectTable) or type(ObjectTable) ~= "table" then return end
 	local first = ObjectTable[1] -- we assume this is a prototype for all objects
 	if not first then ULib.tsayError( me(), "ExLua:1: The table has no values!" ) return end
@@ -188,7 +188,7 @@ function _L( t, i )
 end
 
 function _S( s, i )
-	s = tobool(s)
+	local s = tobool(s)
 	local c, t = {}, util.me._ulxSelection
 	if s then
 		for _,v in next, t do if IsValid(v) and v:IsPlayer() then table.insert(c, v) end end
@@ -203,8 +203,9 @@ function _S( s, i )
 	return nil
 end
 
-function _s( s, i )
-	s = tobool(s)
+_s = nil
+function selectionLoop( s, i )
+	local s = tobool(s)
 	local c, t = {}, util.me._ulxSelection
 	if s then
 		for _,v in next, t do if IsValid(v) and v:IsPlayer() then table.insert(c, v) end end
@@ -213,14 +214,21 @@ function _s( s, i )
 	end; return c
 end
 
-__index = function(t, k)
+setmetatable( ExLua, {__index = function(t, k)
 	local tr, _ = ULib.getUser(tostring(k),true,util.me)
 	if tr then
 		return tr 
+	elseif string.len(k) <= 3 and string.Left(k) == "_s" then
+		local v = string.Replace(k, "_s", "")
+		if v and string.len(v) > 0 then 
+			return selectionLoop(tonumber(v))
+		else
+			return selectionLoop()
+		end
 	else
 		return nil
 	end 
-end; setmetatable(ExLua, ExLua)
+end})
 
 -- Macros
 util.me = Entity(0)
