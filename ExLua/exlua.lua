@@ -1,8 +1,6 @@
 --[[------------------------------------------------------------------------------------------------------------------------
 	ULX ExLua for ULX SVN/ULib SVN by LuaTenshi, YVL, and TheLastPenguin.
 -----------------------------------------------------------------------------------------------------------------------]]--
--- The Config
-local should_side_load_easylua = false
 -- The Prep Code
 if SERVER then 
 	util.AddNetworkString("xlSendULXCommand") 
@@ -42,14 +40,14 @@ if CLIENT then
 			local i = 0
 			txtbox.OnKeyCodeTyped = function( self, key )
 				local str = self:GetValue()
-				if key == KEY_UP then
+				if key == KEY_DOWN then
 					i=i+1; if i > #pastCommands then i = 1 end
 					if pastCommands[i] then
 						self:SetText(pastCommands[i])
 						self:SetValue(pastCommands[i])
 					end
 					return true
-				elseif key == KEY_DOWN then
+				elseif key == KEY_UP then
 					i=i-1; if i > #pastCommands or i <= 0 then i = #pastCommands end
 					if pastCommands[i] then
 						self:SetText(pastCommands[i])
@@ -85,28 +83,6 @@ end
 
 local ExLua = {}
 table.Inherit(ExLua, _G) -- Make a local global table.
-
-if should_side_load_easylua then
-	local fetch_url = "https://raw.githubusercontent.com/CapsAdmin/fast_addons/master/lua/helpers/easylua.lua"
-	local fetch_status = false
-
-	http.Fetch( fetch_url, 
-		function(s) 
-			RunStringEx("EasyLuaInit", s) 
-			fetch_status = true
-		end, 
-		function() 
-			print("Notice: EasyLua not loaded!") 
-			fetch_status = false
-		end
-	)
-
-	if fetch_status then
-		if easylua then
-			table.Merge( ExLua, easylua ) -- Living on the edge.
-		end
-	end
-end
 
 setfenv(1, ExLua) -- Now time to get fancy.
 
@@ -203,36 +179,56 @@ function _S( s, i )
 	return nil
 end
 
-_s = nil
+_p, _s = nil, nil
 function selectionLoop( s, i )
 	local s = tobool(s)
-	local c, t = {}, util.me._ulxSelection
-	if s then
-		for _,v in next, t do if IsValid(v) and v:IsPlayer() then table.insert(c, v) end end
-	else
-		for _,v in next, t do if IsValid(v) and not v:IsPlayer() then table.insert(c, v) end end
-	end; return c
+	local c, t, r = {}, util.me._ulxSelection, true
+	while r do
+		if s then
+			for _,v in next, t do if IsValid(v) and not v:IsPlayer() then table.insert(c, v) end end
+			r = false
+		else
+			for _,v in next, t do if IsValid(v) and v:IsPlayer() then table.insert(c, v) end end
+			if c[1] and c[1]:IsPlayer() then r = false else s = 1 end
+		end
+	end
+	return c
 end
 
-setmetatable( ExLua, {__index = function(t, k)
-	local tr, _ = ULib.getUser(tostring(k),true,util.me)
-	if tr then
-		return tr 
-	elseif string.len(k) <= 3 and string.Left(k,2) == "_s" then
-		local v = string.Replace(k, "_s", "")
-		if v and string.len(v) > 0 then 
-			return selectionLoop(tonumber(v))
+setmetatable( ExLua, {
+	__index = function(t, k)
+		local tr, _ = ULib.getUser(tostring(k),true,util.me)
+		if tr then
+			return tr
+		elseif k == "Me" or k == "_me" then return me()
+		elseif k == "This" or k == "_this" then return this()
+		elseif k == "That" or k == "_that" then return that()
+		elseif k == "Here" or k == "_here" then return here()
+		elseif k == "There" or k == "_there" then return there()
+		elseif k == "_p" then return I(player.GetAll())
+		elseif k == "_px" then
+			local t = player.GetAll()
+			table.RemoveByValue( t, me() )
+			return I(t)
+		elseif k == "_s" or k == "_s1" then
+			local v = string.Replace(k, "_s", "")
+			if v and string.len(v) > 0 then 
+				return I(selectionLoop(tonumber(v)))
+			else
+				return I(selectionLoop())
+			end
 		else
-			return selectionLoop()
-		end
-	else
-		return nil
-	end 
-end})
+			return nil
+		end 
+	end
+})
 
 -- Macros
 util.me = Entity(0)
+
 function me() return util.me end
+function that() return util.me.mark end
+function here() local tr = util.me:GetEyeTrace() return tr.HitPos end
 
 function this() 
 	local tr = util.me:GetEyeTrace() 
@@ -240,16 +236,49 @@ function this()
 	return tr.Entity 
 end
 
-function that() return util.me.mark end
-function here() local tr = util.me:GetEyeTrace() return tr.HitPos end
+function CreateEntity(class, callback) -- Taken from EasyLua.
+	local mdl = "error.mdl"
+
+	if IsEntity(class) and class:IsValid() then
+		this = class
+	elseif class:find(".mdl", nil, true) then
+		mdl = class
+		class = "prop_physics"
+
+		this = ents.Create(class)
+		this:SetModel(mdl)
+	else
+		this = ents.Create(class)
+	end
+
+	if callback and type(callback) == 'function' then
+		callback(this);
+	end
+
+	this:Spawn()
+	this:SetPos(here() + Vector(0,0,this:BoundingRadius() * 2))
+	this:DropToFloor()
+	this:PhysWake()
+
+	undo.Create(class)
+		undo.SetPlayer(me())
+		undo.AddEntity(this)
+	undo.Finish()
+	
+	util.me.mark = this
+	return this
+end
+
+function buildent(class, callback) return CreateEntity(class, callback) end
 
 -- Easy Entity Marking
 function gmk() return util.me.mark end -- Obsolete?
 function gsel(n) local t = util.me._ulxSelection if type(n) == "number" then return t[n] end return t end
 
 setfenv(1, _G) -- Back to the global.
--- Make it Safe
-ExLua.setfenv, ExLua.ulx, ExLua.FAdmin, ExLua.fadmin, ExLua.game = nil, nil, nil, nil, nil
+
+-- Is it safe? Make it safe!
+ExLua.setfenv, ExLua.ulx, ExLua.FAdmin, ExLua.fadmin, ExLua.game = nil, nil, nil, nil, nil, nil
 
 function ulx.exlua( calling_ply, str )
 	local tab, out, s, p, err = {}, "", ""
@@ -284,7 +313,7 @@ function ulx.exlua( calling_ply, str )
 				trg, err = ULib.getUsers(tostring(x),true,ply)
 				if trg and not err then
 					calling_ply.targets = trg
-					out = string.Replace(str, x..":"..y, "_I(me.targets):"..y)
+					out = string.Replace(str, x..":"..y, "I(me.targets):"..y)
 					should_replace = true
 				else
 					ULib.tsayError(	ply, "ExLua:2: "..tostring(err) )
