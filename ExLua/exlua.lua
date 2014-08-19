@@ -12,8 +12,16 @@ if CLIENT then
 	local pastCommands = {}
 	hook.Add("ChatTextChanged", "__ExLuaM", function(str)
 		if str == "!l " then
+			local tab = {}
 			table.RemoveByValue( pastCommands, "" )
 			table.RemoveByValue( pastCommands, nil )
+			for _,v in next, pastCommands do 
+				if string.Trim(v) ~= "" then
+					table.insert(tab, v)
+				end
+			end
+			pastCommands = tab
+			tab = nil
 			chat.Close()
 
 			local hax = vgui.Create("DFrame")
@@ -180,7 +188,7 @@ H.g = hook.GetTable
 function I(ObjectTable)
 	if (not ObjectTable) or type(ObjectTable) ~= "table" then return end
 	local first = ObjectTable[1] -- we assume this is a prototype for all objects
-	if not first then ULib.tsayError( me(), "ExLua:1: The table has no values!" ) return end
+	if not first then ULib.tsayError( futil.me(), "ExLua:1: The table has no values!" ) return end
 	return setmetatable(ObjectTable, {
 		__index = function(self, key)
 			local val = first[key]
@@ -191,11 +199,11 @@ function I(ObjectTable)
 								val(v, ...)
 						end
 					else
-						ULib.tsayError( me(), "ExLua:1: No method called!" )
+						ULib.tsayError( futil.me(), "ExLua:1: No method called!" )
 					end
 				end
 			else
-				ULib.tsayError( me(), "ExLua:1: Unsupported type or nil refrence." )
+				ULib.tsayError( futil.me(), "ExLua:1: Unsupported type or nil refrence." )
 			end
 		end
 	})
@@ -255,7 +263,7 @@ setmetatable( ExLua, {
 		elseif k == "_p" then return I(player.GetAll())
 		elseif k == "_px" then
 			local t = player.GetAll()
-			table.RemoveByValue( t, me() )
+			table.RemoveByValue( t, futil.me() )
 			return I(t)
 		elseif k == "_s" or k == "_s1" then
 			local v = string.Replace(k, "_s", "")
@@ -314,7 +322,7 @@ function CreateEntity(class, callback) -- Taken from EasyLua.
 	this:PhysWake()
 
 	undo.Create(class)
-		undo.SetPlayer(me())
+		undo.SetPlayer(futil.me())
 		undo.AddEntity(this)
 	undo.Finish()
 	
