@@ -90,20 +90,23 @@ local _ent = FindMetaTable("Entity")
 -- Entity - Shortners
 function _ent:color(color, ...)
 	if color == nil then
-		local color = Color(0,0,0,0)
-		if self:IsPlayer() then color = self:GetPlayerColor(Vector(color.r/255, color.g/255, color.b/255)) else color = self:GetColor(color) end
+		local color = Color(255,255,255,255)
+		if self:IsPlayer() then color = self:GetPlayerColor() else color = self:GetColor() end
 		return color
 	end
 	if type(color) == "string" then color = string.ToColor(color) end
 	if select("#", ...) >= 1 then color = Color(color, select(1, ...) or 0, select(2, ...) or 0, select(3, ...) or 255) end
 	if self:IsPlayer() then self:SetPlayerColor(Vector(color.r/255, color.g/255, color.b/255)) else self:SetColor(color) end
 end; function _ent:colour(color, ...) return self:color(color, ...) end
+
 function _ent:del() SafeRemoveEntity(self) end
+
 function _ent:move(vector)
 	local mins, maxs = self:OBBMins(), self:OBBMaxs()
 	local dif = (mins:Distance(maxs)/2) - 7
 	self:SetPos(vector + Vector(0,0,dif))
 end
+
 function _ent:hurt(n)
 	local me = ExLua.util.me
 	if n then
@@ -113,6 +116,50 @@ function _ent:hurt(n)
 		self:TakeDamage( hp+10, me, me )
 	end
 end
+
+function _ent:svel(vec, ...)
+	if vec == nil then vec = Vector(0,0,0) end
+	if type(vec) == "string" then 
+		vec = string.ToColor(vec)
+		vec = Vector(vec.r, vec.g, vec.b)
+	end
+	if select("#", ...) >= 1 then 
+		vec = Vector(vec, select(1, ...) or 0, select(2, ...) or 0) 
+	end
+
+	self:SetVelocity(vec)
+	self:SetLocalVelocity(vec)
+
+	if not (self:IsPlayer() or self:IsNPC()) then
+		local phys = self:GetPhysicsObject()
+		if phys and IsValid(phys) then
+			phys:SetVelocityInstantaneous(vec)
+			vec = vec * 10
+			phys:ApplyForceCenter( vec )
+		end
+	end
+end
+
+local _ply = FindMetaTable("Player")
+local _plyold = {}
+
+if _ply.SetNick then 
+	_plyold.SetNick = _ply.SetNick 
+else
+	_plyold.SetNick = _ply.Nick
+end
+
+function _ply:SetNick(newname)
+	if _G.DarkRP and self.setRPName then
+		local target = self
+		local name = tostring(newname)
+		------------
+		DarkRP.storeRPName(target, name)
+		target:setDarkRPVar("rpname", name)
+	end
+	return _plyold.SetNick(self, newname)
+end
+function _ply:SetName(newname) return self:SetNick(newname) end
 
 -- Shortners
 V = Vector
@@ -200,11 +247,11 @@ setmetatable( ExLua, {
 		local tr, _ = ULib.getUser(tostring(k),true,util.me)
 		if tr then
 			return tr
-		elseif k == "Me" or k == "_me" then return me()
-		elseif k == "This" or k == "_this" then return this()
-		elseif k == "That" or k == "_that" then return that()
-		elseif k == "Here" or k == "_here" then return here()
-		elseif k == "There" or k == "_there" then return there()
+		elseif k == "me" or k == "Me" or k == "_me" then return futil.me()
+		elseif k == "this" or k == "This" or k == "_this" then return futil.this()
+		elseif k == "that" or k == "That" or k == "_that" then return futil.that()
+		elseif k == "here" or k == "Here" or k == "_here" then return futil.here()
+		elseif k == "there" or k == "There" or k == "_there" then return futil.here()
 		elseif k == "_p" then return I(player.GetAll())
 		elseif k == "_px" then
 			local t = player.GetAll()
@@ -226,18 +273,24 @@ setmetatable( ExLua, {
 -- Macros
 util.me = Entity(0)
 
-function me() return util.me end
-function that() return util.me.mark end
-function here() local tr = util.me:GetEyeTrace() return tr.HitPos end
+---- Utility Functions
+futil = {}
+me, that, here, there, this = nil, nil, nil, nil, nil
+-- ^ Prepair for meta detection.
 
-function this() 
+function futil.me() return util.me end
+function futil.that() return util.me.mark end
+function futil.here() local tr = util.me:GetEyeTrace() return tr.HitPos end
+
+function futil.this() 
 	local tr = util.me:GetEyeTrace() 
-	util.me.mark = tr.Entity 
+	util.me.mark = tr.Entity
 	return tr.Entity 
 end
 
+---- Other Functions
 function CreateEntity(class, callback) -- Taken from EasyLua.
-	local mdl = "error.mdl"
+	local this, mdl = Entity(0), "error.mdl"
 
 	if IsEntity(class) and class:IsValid() then
 		this = class
@@ -271,7 +324,7 @@ end
 
 function buildent(class, callback) return CreateEntity(class, callback) end
 
--- Easy Entity Marking
+---- Easy Entity Marking
 function gmk() return util.me.mark end -- Obsolete?
 function gsel(n) local t = util.me._ulxSelection if type(n) == "number" then return t[n] end return t end
 
@@ -371,5 +424,3 @@ exlua:help( [[Run a lua script on the server.
 Excepts player arguments such as a players name or the ULX keywords.
 
 Accepted Keywords: ^, @, $10 ]] )
-
--- _G.__index = function(t, k) local tr = ULib.getUser(tostring(k),true,nil) if tr then return tr else return nil end end setmetatable(_G, _G)
