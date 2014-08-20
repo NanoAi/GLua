@@ -135,15 +135,28 @@ function _ent:svel(vec, ...)
 		vec = Vector(vec, select(1, ...) or 0, select(2, ...) or 0) 
 	end
 
-	self:SetVelocity(vec)
-	self:SetLocalVelocity(vec)
+	if self:IsPlayer() or self:IsNPC() then
+		self:SetVelocity(vec)
+	end
 
 	if not (self:IsPlayer() or self:IsNPC()) then
 		local phys = self:GetPhysicsObject()
 		if phys and IsValid(phys) then
 			phys:SetVelocityInstantaneous(vec)
 			vec = vec * 10
-			phys:ApplyForceCenter( vec )
+			phys:SetVelocity( vec )
+			-- phys:ApplyForceCenter( vec )
+		end
+	end
+end
+
+function _ent:bouncey(vel)
+	if not (self:IsPlayer() or self:IsNPC()) then
+		local phys = self:GetPhysicsObject()
+		if phys and IsValid(phys) then
+			phys:EnableMotion(false)
+			vel = vel * 10
+			self:SetLocalVelocity(Vector(0,0,vel))
 		end
 	end
 end
@@ -278,6 +291,21 @@ setmetatable( ExLua, {
 	end
 })
 
+-- Enums
+---- Colors
+COLOR_WHITE  = Color(255, 255, 255, 255)
+COLOR_BLACK  = Color(0, 0, 0, 255)
+COLOR_GREEN  = Color(0, 255, 0, 255)
+COLOR_DGREEN = Color(0, 100, 0, 255)
+COLOR_RED    = Color(255, 0, 0, 255)
+COLOR_YELLOW = Color(200, 200, 0, 255)
+COLOR_LGRAY  = Color(200, 200, 200, 255)
+COLOR_BLUE   = Color(0, 0, 255, 255)
+COLOR_NAVY   = Color(0, 0, 100, 255)
+COLOR_PINK   = Color(255,0,255, 255)
+COLOR_ORANGE = Color(250, 100, 0, 255)
+COLOR_OLIVE  = Color(100, 100, 0, 255)
+
 -- Macros
 util.me = Entity(0)
 
@@ -317,7 +345,7 @@ function CreateEntity(class, callback) -- Taken from EasyLua.
 	end
 
 	this:Spawn()
-	this:SetPos(here() + Vector(0,0,this:BoundingRadius() * 2))
+	this:SetPos(futil.here() + Vector(0,0,this:BoundingRadius() * 2))
 	this:DropToFloor()
 	this:PhysWake()
 
