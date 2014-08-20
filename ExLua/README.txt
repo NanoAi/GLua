@@ -14,5 +14,5 @@ EasyLua Source: https://github.com/CapsAdmin/fast_addons/blob/master/lua/helpers
 SVN Checkout Link: https://github.com/LuaTenshi/GLua/trunk/ExLua
 
 How To Install: 
-    - Add <exlua.lua> to Folder: lua/ulx/modules/sh
-    - Add <ulx_selector.lua> to Folder: lua/autorun
+    - Add <exlua.lua> to Folder: lua/ulx/modules/sh/
+    - Add <ulx_selector.lua> to Folder: lua/autorun/
