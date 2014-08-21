@@ -202,7 +202,7 @@ H.r = hook.Run
 H.c = hook.Call
 H.g = hook.GetTable
 
-function N(target, ...)
+function N(target)
 	local target, err = ULib.getUsers(tostring(target),true,futil.me())
 	if type(target) == "table" then
 		return I(target)
