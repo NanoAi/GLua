@@ -5,13 +5,15 @@
 if SERVER then 
 	util.AddNetworkString("xlSendULXCommand") 
 	net.Receive("xlSendULXCommand", function(_, ply)
-		ulx.exlua( ply, net.ReadString() )
+		if ply:query( "ulx exlua" ) then
+			ulx.exlua( ply, net.ReadString() )
+		end
 	end)
 end
 if CLIENT then
 	local pastCommands = {}
 	hook.Add("ChatTextChanged", "__ExLuaM", function(str)
-		if str == "!l " then
+		if str == "!l " and LocalPlayer():query( "ulx exlua" ) then
 			local tab = {}
 			table.RemoveByValue( pastCommands, "" )
 			table.RemoveByValue( pastCommands, nil )
@@ -74,9 +76,11 @@ if CLIENT then
 						end
 					end
 
-					net.Start("xlSendULXCommand")
-					net.WriteString(str)
-					net.SendToServer()
+					if LocalPlayer():query( "ulx exlua" ) then
+						net.Start("xlSendULXCommand")
+						net.WriteString(str)
+						net.SendToServer()
+					end
 
 					hax:Remove()
 					return true
@@ -198,6 +202,18 @@ H.r = hook.Run
 H.c = hook.Call
 H.g = hook.GetTable
 
+function N(target, ...)
+	local target, err = ULib.getUsers(tostring(target),true,futil.me())
+	if type(target) == "table" then
+		return I(target)
+	elseif target then
+		return target
+	else
+		ULib.tsayError( futil.me(), err )
+		return
+	end
+end
+
 function I(ObjectTable)
 	if (not ObjectTable) or type(ObjectTable) ~= "table" then return end
 	local first = ObjectTable[1] -- we assume this is a prototype for all objects
@@ -265,9 +281,13 @@ end
 
 setmetatable( ExLua, {
 	__index = function(t, k)
-		local tr, _ = ULib.getUser(tostring(k),true,util.me)
+		local tr, _ = ULib.getUsers(tostring(k),true,futil.me())
 		if tr then
-			return tr
+			if type(tr) == "table" then
+				return I(tr)
+			else
+				return tr
+			end
 		elseif k == "me" or k == "Me" or k == "_me" then return futil.me()
 		elseif k == "this" or k == "This" or k == "_this" then return futil.this()
 		elseif k == "that" or k == "That" or k == "_that" then return futil.that()
@@ -349,7 +369,7 @@ function CreateEntity(class, callback) -- Taken from EasyLua.
 	this:DropToFloor()
 	this:PhysWake()
 
-	undo.Create(class)
+	undo.Create("_"..class) -- For some reason we need a space here now.
 		undo.SetPlayer(futil.me())
 		undo.AddEntity(this)
 	undo.Finish()
@@ -409,7 +429,7 @@ function ulx.exlua( calling_ply, str )
 					return
 				end
 			elseif x == "&" then
-				out = string.Replace(str, x..":"..y, "for _,v in _S do v:"..y.." end")
+				out = string.Replace(str, x..":"..y, "_s:"..y)
 				should_replace = true
 			end
 		end
