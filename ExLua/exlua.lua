@@ -1,96 +1,6 @@
 --[[------------------------------------------------------------------------------------------------------------------------
 	ULX ExLua for ULX SVN/ULib SVN by LuaTenshi, YVL, and TheLastPenguin.
 -----------------------------------------------------------------------------------------------------------------------]]--
--- The Prep Code
-if SERVER then 
-	util.AddNetworkString("xlSendULXCommand") 
-	net.Receive("xlSendULXCommand", function(_, ply)
-		if ply:query( "ulx exlua" ) then
-			ulx.exlua( ply, net.ReadString() )
-		end
-	end)
-end
-if CLIENT then
-	local pastCommands = {}
-	hook.Add("ChatTextChanged", "__ExLuaM", function(str)
-		if str == "!l " and LocalPlayer():query( "ulx exlua" ) then
-			local tab = {}
-			table.RemoveByValue( pastCommands, "" )
-			table.RemoveByValue( pastCommands, nil )
-			for _,v in next, pastCommands do 
-				if string.Trim(v) ~= "" then
-					table.insert(tab, v)
-				end
-			end
-			pastCommands = tab
-			tab = nil
-			chat.Close()
-
-			local hax = vgui.Create("DFrame")
-			hax:SetPos(0,0)
-			hax:SetSize( ScrW(), ScrH() )
-			hax:SetTitle(" ")
-			hax:SetDraggable( false )
-			hax:ShowCloseButton( false )
-			hax:MakePopup()
-			hax.Paint = function()
-				draw.RoundedBox( 8, 0, 0, hax:GetWide(), hax:GetTall(), Color( 0, 0, 0, 0 ) )
-			end
-
-			local txtbox = vgui.Create( "DTextEntry", hax )
-			txtbox:SetPos( 0, ScrH() - 25 )
-			txtbox:SetSize( ScrW(), 25 )
-			txtbox:RequestFocus()
-			txtbox.OnLoseFocus = function( self ) self:RequestFocus() end
-			txtbox.Paint = function( self )
-				draw.RoundedBoxEx(8, 0, 0, self:GetWide(), self:GetTall(), Color( 0, 0, 0, 250 ), true, true, false, false)
-				self:DrawTextEntryText(Color(255, 255, 255), Color(30, 130, 255), Color(255, 255, 255))
-			end
-
-			local i = 0
-			txtbox.OnKeyCodeTyped = function( self, key )
-				local str = self:GetValue()
-				if key == KEY_DOWN then
-					i=i+1; if i > #pastCommands then i = 1 end
-					if pastCommands[i] then
-						self:SetText(pastCommands[i])
-						self:SetValue(pastCommands[i])
-					end
-					return true
-				elseif key == KEY_UP then
-					i=i-1; if i > #pastCommands or i <= 0 then i = #pastCommands end
-					if pastCommands[i] then
-						self:SetText(pastCommands[i])
-						self:SetValue(pastCommands[i])
-					end
-					return true
-				elseif key == KEY_ESCAPE then
-					hax:Remove()
-					return true
-				elseif key == KEY_ENTER then
-					if not table.HasValue(pastCommands, string.Left(str, 1000)) then
-						if #pastCommands <= 50 then
-							table.insert(pastCommands, string.Left(str, 1000))
-						else
-							table.Empty(pastCommands)
-						end
-					end
-
-					if LocalPlayer():query( "ulx exlua" ) then
-						net.Start("xlSendULXCommand")
-						net.WriteString(str)
-						net.SendToServer()
-					end
-
-					hax:Remove()
-					return true
-				end
-				return false
-			end
-		end
-	end)
-end
-
 -- The Real Code
 
 local ExLua = {}
@@ -336,10 +246,10 @@ me, that, here, there, this = nil, nil, nil, nil, nil
 
 function futil.me() return util.me end
 function futil.that() return util.me.mark end
-function futil.here() local tr = util.me:GetEyeTrace() return tr.HitPos end
+function futil.here() local tr = util.me:GetEyeTraceNoCursor() return tr.HitPos end
 
 function futil.this() 
-	local tr = util.me:GetEyeTrace() 
+	local tr = util.me:GetEyeTraceNoCursor()
 	util.me.mark = tr.Entity
 	return tr.Entity 
 end
@@ -472,7 +382,7 @@ function ulx.exlua( calling_ply, str )
 	end
 	calling_ply.targets = nil
 end
-local exlua = ulx.command( "Extra Utility", "ulx exlua", ulx.exlua, "!l" )
+local exlua = ulx.command( "Extra Utility", "ulx exlua", ulx.exlua, {"!l", "!L"} )
 exlua:addParam{ type=ULib.cmds.StringArg, hint="Lua Code", ULib.cmds.takeRestOfLine }
 exlua:defaultAccess( ULib.ACCESS_SUPERADMIN )
 exlua:help( [[Run a lua script on the server. 
