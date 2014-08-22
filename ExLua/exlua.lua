@@ -303,7 +303,7 @@ function ulx.exlua( calling_ply, str )
 	local tab, out, s, p, err = {}, "", ""
 	local ply = calling_ply; ExLua.util.me = calling_ply
 	
-	if string.Trim(str) == "" or string.Trim(str) == "Lua Code" then ULib.tsayError( ply, "ExLua:1: Please enter some code to run." ) return end
+	if string.Trim(str) == "" or string.Trim(str) == "Lua Code" then return end
 	if string.len(str) <= 1 then ULib.tsayError( ply, "ExLua:1: The string you entered is too short." ) return end
 	
 	for x,y in string.gmatch(str, "(%S+):(%S+)") do table.insert(tab, {x = x, y = y}) end
@@ -389,8 +389,4 @@ exlua:help( [[Run a lua script on the server.
 
 Excepts player arguments such as a players name or the ULX keywords.
 
-<<<<<<< HEAD
 Accepted Keywords: ^, @, $10 ]] )
-=======
-Accepted Keywords: ^, @, $10 ]] )
->>>>>>> 442912276b8cbd14a6d71bf046ed66176703e1f8
