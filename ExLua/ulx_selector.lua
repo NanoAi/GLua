@@ -67,19 +67,11 @@ if CLIENT then
 							if pv:Length2D() < ov:Length2D() then
 								if v:WithinAABox( pv, ov ) then
 									if trg:EntIndex() >= 1 then table.insert(selected, trg) end
-<<<<<<< HEAD
 								end
 							else
 								if v:WithinAABox( ov, pv ) then
 									if trg:EntIndex() >= 1 then table.insert(selected, trg) end
 								end
-=======
-								end
-							else
-								if v:WithinAABox( ov, pv ) then
-									if trg:EntIndex() >= 1 then table.insert(selected, trg) end
-								end
->>>>>>> 442912276b8cbd14a6d71bf046ed66176703e1f8
 							end
 						end
 					end
@@ -126,8 +118,4 @@ if CLIENT then
 			end)
 		end
 	end)
-<<<<<<< HEAD
 end
-=======
-end
->>>>>>> 442912276b8cbd14a6d71bf046ed66176703e1f8
