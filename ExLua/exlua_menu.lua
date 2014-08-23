@@ -242,7 +242,8 @@ if CLIENT then
 			table.RemoveByValue( pastCommands, "" )
 			table.RemoveByValue( pastCommands, nil )
 			for _,v in next, pastCommands do 
-				if string.Trim(v) ~= "" then
+				local v = tostring(v)
+				if v and string.Trim(v) ~= "" then
 					table.insert(tab, v)
 				end
 			end
