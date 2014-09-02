@@ -176,6 +176,43 @@ if CLIENT then
 			draw.RoundedBox( 8, 0, 0, hax:GetWide(), hax:GetTall(), Color( 0, 0, 0, 0 ) )
 		end
 
+		local PlyList = vgui.Create( "DListView", hax )
+		PlyList:SetSize( ScrW()/3, ScrH()/5 )
+		PlyList:SetMultiSelect( true )
+
+		PlyList.Paint = function(self, w, h) draw.RoundedBoxEx(8, 0, 0, w, h, Color( 0, 0, 0, 220 ), false, false, false, true) end
+
+		local plist = {}
+		plist[1] = PlyList:AddColumn( "Index" );
+		plist[1]:SetFixedWidth( 40 );
+		plist[2] = PlyList:AddColumn( "Player" );
+		plist[2]:SetWidth( 200 );
+		plist[3] = PlyList:AddColumn( "SteamID" );
+		plist[3]:SetFixedWidth( 116 );
+
+		for _,v in next, plist do
+			v.Header:SetTextColor( Color( 255, 255, 255 ) ) 
+			v.Header.Paint = function(self, w, h) draw.RoundedBox( 0, 0, 0, w+10, h, Color(0,0,0,230) ) end 
+		end
+
+		for _,v in next, player.GetAll() do
+			local a = PlyList:AddLine( v:EntIndex(), v:Nick() or v:Name(), tostring(v:SteamID()) or "NULL" )
+			a.Entity = v
+			a.m_Skin.Colours.Label.Dark = Color(255,255,255)
+			a.m_Skin.Colours.Label.Bright = Color(255,255,255)
+		end
+
+		PlyList.OnRowSelected = function()
+			local sel = sel or {}
+			local vlist = PlyList:GetSelected() or {}
+			for _,v in next, vlist do
+				if not table.HasValue(sel, v.Entity) then 
+					table.insert(sel, v.Entity)
+				end
+			end
+			net.Start("ulx_selector") net.WriteTable(sel) net.SendToServer()
+		end
+
 		hax.OnMousePressed = function( p, code )
 			EntityClick(code, gui.ScreenToVector( gui.MousePos() ), LocalPlayer():GetEyeTrace(), true)
 		end
@@ -237,7 +274,7 @@ if CLIENT then
 	end
 
 	hook.Add("ChatTextChanged", "__ExLuaM", function(str)
-		if str == "!l " or str == "!L " and LocalPlayer():query( "ulx exlua" ) then
+		if str == "!l " or str == "!L " or str == ":" and LocalPlayer():query( "ulx exlua" ) then
 			local tab = {}
 			table.RemoveByValue( pastCommands, "" )
 			table.RemoveByValue( pastCommands, nil )
