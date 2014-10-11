@@ -38,14 +38,16 @@ APA.Settings.GhostOnSpawn = 1
 APA.Settings.Nerf = 1 -- Note: Setting physgun_maxSpeed to 400 (Default: 5000), will make this work better, and limmit how fast people can move props with their physgun.
 -- Setting this to 1 will attempt to automatically block huge props, setting this to 0 will disable it!
 APA.Settings.FPP.AutoBlock = 1 -- (Requires: Falco's Prop Protection!)
-APA.Settings.FPP.ABSize = 5.85 --How big a prop should be before it is blocked. (Requires: RemoveBig to be set to 1!)
-APA.Settings.FPP.Sounds = 0 --Setting this to 1 will make an error sound, when a prop is autoblocked. (Requires: RemoveBig to be set to 1!)
+APA.Settings.FPP.ABSize = 7.35 --How big a prop should be before it is blocked. (Requires: RemoveBig to be set to 1!)
+APA.Settings.FPP.Sounds = 0 --Setting this to 1 will make an error sound, when a prop is autoblocked. (Requires: AutoBlock to be set to 1!)
 -- Set to 1 to enable the Blacklist, and to 0 to disable it!
 APA.Settings.Blacklist = 1
 -- Set to 1 to enable the Whitelist, and to 0 to disable it!
 APA.Settings.Whitelist = 1
 -- Set to 1 to make weapons not collide with any thing except the world, and set to 0 to make weapons collide like normal.
 APA.Settings.NoCollideWeapons = 1
+-- Set to 1 to automatically freeze props when they are dropped, and set to 0 to disable.
+APA.Settings.ForceFreeze = 0
 -- Set to 1 to automatically freeze props over time, and set to 0 to disable. (Requires: Map restart.)
 APA.Settings.AutoFreeze = 0
 -- How long to wait before freezing all props. (Default: 300) (Requires: apa_autofreeze to be set to 1!)
@@ -53,7 +55,16 @@ APA.Settings.AutoFreezeTime = 300
 -- Should a prop that hits a player be frozen?
 APA.Settings.DamageFreeze = 1
 -- Should we allow gm_spawn (using keybinds)?
--- APA.Settings.AllowGMSpawn = 1
+APA.Settings.AllowGMSpawn = 1
+-- Do not change this.
+APA.AddonLoaded = false
+
+/*----------------------------------------------------------------------------------------------------------------------------------------------------
+-- Add props that you do not want to be auto removed, below.
+----------------------------------------------------------------------------------------------------------------------------------------------------*/
+
+local AllowedHBigProps = {}
+
 
 /*----------------------------------------------------------------------------------------------------------------------------------------------------
 -- Things that should get frozen when they hit a player.
@@ -90,7 +101,10 @@ local ClassBlacklist = {
 ----------------------------------------------------------------------------------------------------------------------------------------------------*/
 
 local ClassWhitelist = {
-	"knife" -- This should allow throwing knives to do damage.
+	"knife", -- This should allow throwing knives to do damage.
+	"prop_combine_ball", -- Should avoid problems with combine balls.
+	"npc_tripmine", -- Should not be detected but added just incase.
+	"npc_satchel" -- Ditto.
 }
 
 /*----------------------------------------------------------------------------------------------------------------------------------------------------
@@ -106,7 +120,7 @@ APA.Settings.AlertAdminsThreshold = CreateConVar("apa_alertadmins_threshold", AP
 APA.Settings.DamageReturn = CreateConVar("apa_antipk_punish", APA.Settings.DamageReturn, {FCVAR_DEMO, FCVAR_GAMEDLL, FCVAR_SERVER_CAN_EXECUTE, FCVAR_NOTIFY}, "Setting this to 1 will hurt the owner of the prop that did damage! (WARNING: This may be abused. Players may launch other peoples props at them selves thus killing innocents.)")
 APA.Settings.DamageReturnThreshold = CreateConVar("apa_antipk_punish_threshold", APA.Settings.DamageReturnThreshold, {FCVAR_DEMO, FCVAR_GAMEDLL, FCVAR_SERVER_CAN_EXECUTE, FCVAR_NOTIFY}, "The amount of damage the prop must do before the owner of that prop starts getting hurt. (Requires: APA.Settings.DamageReturn to be enabled.)")
 APA.Settings.DamageFreeze = CreateConVar("apa_antipk_freeze", APA.Settings.DamageFreeze, {FCVAR_DEMO, FCVAR_GAMEDLL, FCVAR_SERVER_CAN_EXECUTE, FCVAR_NOTIFY}, "Setting this to 1 will freeze props when they hit a player, setting it to 0 will disable it!")
--- APA.Settings.AllowGMSpawn = CreateConVar("apa_gmspawn", APA.Settings.AllowGMSpawn, {FCVAR_DEMO, FCVAR_GAMEDLL, FCVAR_SERVER_CAN_EXECUTE, FCVAR_NOTIFY}, "Setting this to 0 will stop people from using gm_spawn binds, setting it to 1 will allow them to use gm_spawn binds.")
+APA.Settings.AllowGMSpawn = CreateConVar("apa_gmspawn", APA.Settings.AllowGMSpawn, {FCVAR_DEMO, FCVAR_GAMEDLL, FCVAR_SERVER_CAN_EXECUTE, FCVAR_NOTIFY}, "Setting this to 0 will stop people from using gm_spawn binds, setting it to 1 will allow them to use gm_spawn binds.")
 APA.Settings.VehiclesDontHurt = CreateConVar("apa_vehiclesdonthurt", APA.Settings.VehiclesDontHurt, {FCVAR_DEMO, FCVAR_GAMEDLL, FCVAR_SERVER_CAN_EXECUTE, FCVAR_NOTIFY}, "Setting this to 1 will stop vehicles from doing damage.")
 APA.Settings.BlockExplosions = CreateConVar("apa_blockexplosions", APA.Settings.BlockExplosions, {FCVAR_DEMO, FCVAR_GAMEDLL, FCVAR_SERVER_CAN_EXECUTE, FCVAR_NOTIFY}, "Setting this to 1 will block explosions, setting it to 0 will disable it!")
 APA.Settings.NoCollideVehicles = CreateConVar("apa_nocollidevehicles", APA.Settings.NoCollideVehicles, {FCVAR_DEMO, FCVAR_GAMEDLL, FCVAR_SERVER_CAN_EXECUTE, FCVAR_NOTIFY}, "Setting this to 1 will make vehicles not collide with players.")
@@ -120,6 +134,7 @@ APA.Settings.FPP.Sounds = CreateConVar("apa_fpp_sounds", APA.Settings.FPP.Sounds
 APA.Settings.Blacklist = CreateConVar("apa_blacklist", APA.Settings.Blacklist, {FCVAR_DEMO, FCVAR_GAMEDLL, FCVAR_SERVER_CAN_EXECUTE, FCVAR_NOTIFY}, "Set to 1 to enable the Blacklist, and to 0 to disable it!")
 APA.Settings.Whitelist = CreateConVar("apa_whitelist", APA.Settings.Whitelist, {FCVAR_DEMO, FCVAR_GAMEDLL, FCVAR_SERVER_CAN_EXECUTE, FCVAR_NOTIFY}, "Set to 1 to enable the Whitelist, and to 0 to disable it!")
 APA.Settings.NoCollideWeapons = CreateConVar("apa_nocollideweapons", APA.Settings.NoCollideWeapons, {FCVAR_DEMO, FCVAR_GAMEDLL, FCVAR_SERVER_CAN_EXECUTE, FCVAR_NOTIFY}, "Set to 1 to make weapons not collide with any thing except the world, and set to 0 to make weapons collide like normal.")
+APA.Settings.ForceFreeze = CreateConVar("apa_forcefreeze", APA.Settings.ForceFreeze, {FCVAR_DEMO, FCVAR_GAMEDLL, FCVAR_SERVER_CAN_EXECUTE, FCVAR_NOTIFY}, "Set to 1 to automatically freeze props when they are dropped, and set to 0 to disable.")
 APA.Settings.AutoFreeze = CreateConVar("apa_autofreeze", APA.Settings.AutoFreeze, {FCVAR_DEMO, FCVAR_GAMEDLL, FCVAR_SERVER_CAN_EXECUTE, FCVAR_NOTIFY}, "Set to 1 to automatically freeze props over time, and set to 0 to disable. (Requires: Map restart.)")
 APA.Settings.AutoFreezeTime = CreateConVar("apa_autofreeze_time", APA.Settings.AutoFreezeTime, {FCVAR_DEMO, FCVAR_GAMEDLL, FCVAR_SERVER_CAN_EXECUTE, FCVAR_NOTIFY}, "How long to wait before freezing all props. (Default: 300) (Requires: apa_autofreeze to be set to 1!)")
 
@@ -129,6 +144,7 @@ util.AddNetworkString("sMsgAdmins")
 util.AddNetworkString("sNotifyHit")
 util.AddNetworkString("sAlertNotice")
 util.AddNetworkString("sMsgStandard")
+util.AddNetworkString("sBlockGMSpawn")
 
 local APAWorldEnts = {}
 hook.Add( "InitPostEntity", "_APAGetWorldEnts", function()
@@ -344,7 +360,7 @@ local function APAntiLoad()
 			local atker, inflictor, dmg = dmginfo:GetAttacker(), dmginfo:GetInflictor(), dmginfo:GetDamage()
 
 			if APA.Settings.VehiclesDontHurt:GetInt() >= 1 and not badEntity then
-				if atker:IsVehicle() or inflictor:IsVehicle() then -- Is a vehicle doing this?
+				if dmginfo:GetDamageType() == DMG_VEHICLE or atker:IsVehicle() or inflictor:IsVehicle() then -- Is a vehicle doing this?
 					dmginfo:SetDamage(0)	dmginfo:ScaleDamage( 0 )
 				end
 			end
@@ -454,19 +470,23 @@ local function APAntiLoad()
 	-- Used for ghosting a prop when it spawns in theory we could have FPPs anti-spam take care of this but this lets people build without their console getting spammed with "your prop has been ghosted".
 		if( ent:IsValid() and !ent:IsPlayer() and not APA.IsWorld( ent ) ) then
 			ent.APGhost = true
-			ent.OldCollisionGroup = ent:GetCollisionGroup()
+			
+			local oColGroup = ent:GetCollisionGroup()
+			ent.OldCollisionGroup = ent.OldCollisionGroup or oColGroup or 0
+
 			ent:SetRenderMode(RENDERMODE_TRANSALPHA)
 			ent:DrawShadow(false)
 			ent.OldColor = ent.OldColor or ent:GetColor()
 			ent:SetColor(Color(255, 255, 255, ent.OldColor.a - 70))
 
-
-			if( APA.Settings.APCollision:GetInt() >= 1 ) then
-				ent:SetCollisionGroup(COLLISION_GROUP_WEAPON)
-				ent.CollisionGroup = COLLISION_GROUP_WEAPON
-			else
-				ent:SetCollisionGroup(COLLISION_GROUP_WORLD)
-				ent.CollisionGroup = COLLISION_GROUP_WORLD
+			if not ( oColGroup == COLLISION_GROUP_WEAPON or oColGroup == COLLISION_GROUP_WORLD ) then
+				if( APA.Settings.APCollision:GetInt() >= 1 ) then
+					ent:SetCollisionGroup(COLLISION_GROUP_WEAPON)
+					ent.CollisionGroup = COLLISION_GROUP_WEAPON
+				else
+					ent:SetCollisionGroup(COLLISION_GROUP_WORLD)
+					ent.CollisionGroup = COLLISION_GROUP_WORLD
+				end
 			end
 
 			ent.APNoColided = true
@@ -482,18 +502,23 @@ local function APAntiLoad()
 				if ( spoof or ( APA.CanPickup( picker, ent ) ) ) then
 --					|_ Used for the anti-trap makes it so the prop is ghosted. |_ Admins and SuperAdmins can pick up other peoples props so...
 					ent.APGhost = true
-					ent.OldCollisionGroup = ent:GetCollisionGroup()
+					
+					local oColGroup = ent:GetCollisionGroup()
+					ent.OldCollisionGroup = ent.OldCollisionGroup or oColGroup or 0
+
 					ent:SetRenderMode(RENDERMODE_TRANSALPHA)
 					ent:DrawShadow(false)
 					ent.OldColor = ent.OldColor or ent:GetColor()
 					ent:SetColor(Color(255, 255, 255, ent.OldColor.a - 70)) -- Make the prop slightly faded to show that its ghosted.
 
-					if( APA.Settings.APCollision:GetInt() >= 1 ) then
-						ent:SetCollisionGroup(COLLISION_GROUP_WEAPON)
-						ent.CollisionGroup = COLLISION_GROUP_WEAPON
-					else
-						ent:SetCollisionGroup(COLLISION_GROUP_WORLD)
-						ent.CollisionGroup = COLLISION_GROUP_WORLD
+					if not ( oColGroup == COLLISION_GROUP_WEAPON or oColGroup == COLLISION_GROUP_WORLD ) then
+						if( APA.Settings.APCollision:GetInt() >= 1 ) then
+							ent:SetCollisionGroup(COLLISION_GROUP_WEAPON)
+							ent.CollisionGroup = COLLISION_GROUP_WEAPON
+						else
+							ent:SetCollisionGroup(COLLISION_GROUP_WORLD)
+							ent.CollisionGroup = COLLISION_GROUP_WORLD
+						end
 					end
 
 					ent.APNoColided = true
@@ -536,8 +561,11 @@ local function APAntiLoad()
 				if ent.OldColor then ent:SetColor(Color(ent.OldColor.r, ent.OldColor.g, ent.OldColor.b, ent.OldColor.a)) end
 				ent.OldColor = nil
 
-				ent:SetCollisionGroup(COLLISION_GROUP_NONE)
-				ent.CollisionGroup = COLLISION_GROUP_NONE
+				if ent.OldCollisionGroup then
+					ent:SetCollisionGroup(ent.OldCollisionGroup)
+					ent.CollisionGroup = ent.OldCollisionGroup
+				end; ent.OldCollisionGroup = nil
+
 				ent.APNoColided = false
 			end
 		end
@@ -611,6 +639,11 @@ local function APAntiLoad()
 		if( APA.CanPickup( picker, ent ) and picker != ent ) then
 			if APA.Settings.AntiPush:GetInt() <= 0 then APA.Ghost.Off( picker, ent, true ) end -- Unghost props a little faster.
 			ent.APGhostOff = true
+			-----------
+			if APA.Settings.ForceFreeze:GetInt() >= 1 and IsValid(ent) then
+				local phys = ent:GetPhysicsObject()
+				if IsValid(phys) then phys:EnableMotion(false) end
+			end
 		end
 	end)
 
@@ -652,8 +685,20 @@ local function APAntiLoad()
 		end
 	end)
 
+	--Block GMSpawn
+	hook.Add("Move", "_APA.Settings.AllowGMSpawn", function( ply, mv )
+		if APA.Settings.AllowGMSpawn:GetInt() >= 1 then
+			net.Start("sBlockGMSpawn")
+				net.WriteFloat(tonumber(APA.Settings.AllowGMSpawn:GetInt()))
+			net.Send(ply)
+		end
+	end)
+
+	-- Change DarkRP prop handeling.
+
 	function APA.ModelNameFix( model )
 		local model = model or ""
+		model = tostring(model) -- Maybe redundent but we want to make sure that this is a string.
 		model = string.lower(model)
 		model = string.Replace(model, "\\", "/") -- Thoes backwards slashes always trying to confuse the situation.
 		model = string.Replace(model, " ", "_") -- Model names do not have spaces, stop asking.
@@ -671,15 +716,17 @@ local function APAntiLoad()
 			if ( phys and phys:GetVolume() ) then
 				local mins, maxs = ent:LocalToWorld(ent:OBBMins( )), ent:LocalToWorld(ent:OBBMaxs( ))
 				if ( phys:GetVolume() > math.pow(10,APA.Settings.FPP.ABSize:GetInt()) ) then
-					if( mdl and ( type(FPP) == "table" ) ) then --This will only work if you have Falco's Prop Protection!
-						mdl = APA.ModelNameFix( mdl ) --Just in case.
-						RunConsoleCommand( "FPP_AddBlockedModel", mdl )
+					mdl = APA.ModelNameFix( mdl ) --Just in case.
+					if not table.HasValue(AllowedHBigProps, mdl) then
+						if( mdl and ( type(FPP) == "table" ) ) then --This will only work if you have Falco's Prop Protection!
+							RunConsoleCommand( "FPP_AddBlockedModel", mdl )
+						end
+						if( ply:IsValid() ) then 
+							ply:ChatPrint("That prop is now blocked, thanks!")
+							APA.Notify(owner, "That prop is now blocked, thanks!", NOTIFY_ERROR, 10, tonumber(APA.Settings.FPP.Sounds:GetInt()))
+						end
+						if( ent:IsValid() ) then ent:Remove() end
 					end
-					if( ply:IsValid() ) then 
-						ply:ChatPrint("That prop is now blocked, thanks!")
-						APA.Notify(owner, "That prop is now blocked, thanks!", NOTIFY_ERROR, 10, tonumber(APA.Settings.FPP.Sounds:GetInt()))
-					end
-					if( ent:IsValid() ) then ent:Remove() end
 				end
 			end
 		end
@@ -729,14 +776,22 @@ local function APAntiLoad()
 	end)
 
 	MsgAll("\n<|||APAnti Is Now Running!|||>\n")
-	hook.Remove("PlayerConnect", "APAnti-Execution-Hook")
+	APA.AddonLoaded = true -- This should now reload the script if the map changes.
 end
 
-hook.Add("PlayerConnect", "APAnti-Execution-Hook", function() MsgAll("\n<|||APAnti Is Loading...|||>\n") timer.Simple( 0.5, function() APAntiLoad() end ) end)
+hook.Add("PlayerConnect", "APAnti-Execution-Hook", function() -- Contrary to other addons, this loads when the first player connects.
+	if not APA.AddonLoaded then
+		if #player.GetAll() <= 1 then
+			MsgAll("\n<|||APAnti Is Loading...|||>\n")
+			timer.Simple( 0.5, function() APAntiLoad() end )
+		end
+	end
+end)
 
-hook.Add("PlayerInitialSpawn", function( ply ) ply:PrintMessage( HUD_PRINTCONSOLE, "\nThis server is running APAnti by LuaTenshi.\n") end)
+-- hook.Add("PlayerInitialSpawn", function( ply ) timer.Simple(10, ply:PrintMessage( HUD_PRINTCONSOLE, "\nThis server is running APAnti by LuaTenshi.\n") end) end)
 -- Is it bad if I want to let people know that the server is running my addon?
 
--- hook.Add("EntityTakeDamage","__ap",function(t,d) if( d:GetAttacker():GetClass() == "prop_physics" or d:GetInflictor():GetClass() == "prop_physics" ) then d:SetDamage(0) end end)
+-- hook.Add("EntityTakeDamage","__ap",function(t,d) if( d:GetAttacker():GetClass() == "prop_physics" or d:GetInflictor():GetClass() == "prop_physics" or d:GetDamageType() == DMG_CRUSH ) then d:SetDamage(0) d:ScaleDamage(0) end end)
 -- hook.Add( "PlayerSpawnedProp", "__ex", function( _, _, p ) if( p and IsValid(p) ) then p:SetKeyValue("ExplodeDamage", "0") p:SetKeyValue("ExplodeRadius", "0") end end)
+-- hook.Add( "PhysgunDrop", "__dr", function( _, e ) if e and IsValid(e) then local p = e:GetPhysicsObject() if p and IsValid(p) then p:SetVelocityInstantaneous( Vector(0,0,0) ) end end end)
 -- If you want a simple anti prop kill to run in "ulx luarun" use the code above.

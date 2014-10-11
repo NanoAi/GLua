@@ -80,3 +80,20 @@ net.Receive("sAlertNotice", function()
 		surface.PlaySound("ambient/alarms/klaxon1.wav")
 	end
 end)
+
+local gmblockspawn = 0
+net.Receive("sBlockGMSpawn", function()
+	local n = 0; n = net.ReadFloat() or 0;
+	if gmblockspawn <= 0 and n >= 1 then
+		hook.Add("PlayerBindPress", "_sBlockGMSpawn", function(pl, bind)
+			if ( string.find( bind, "gm_spawn" ) or string.find( bind, "impulse 102" ) ) then 
+				pl:ChatPrint("gm_spawn is currently disabled please try again later.")
+				return true
+			end
+		end)
+		gmblockspawn = 1
+	elseif gmblockspawn >= 1 and n <= 0 then
+		hook.Remove("PlayerBindPress", "_sBlockGMSpawn")
+		gmblockspawn = 0
+	end
+end)
