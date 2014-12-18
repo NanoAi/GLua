@@ -1,8 +1,8 @@
 apa_antipk :: Setting this to 1 will enable Anti Prop Kill, setting it to 0 will disable it!)
 
-[COMING SOON] apa_alertadmins :: Setting this to 1 will alert admins when a player hits another player with a prop. Setting it to 0 will disable it.) - COMING SOON
+apa_alertadmins :: Setting this to 1 will alert admins when a player hits another player with a prop. Setting it to 0 will disable it.)
 
-[COMING SOON] apa_alertadmins_threshold :: How much damage should the prop do for admins to be notified. (Default: 80) (Requires: APA.Settings.AlertAdmins to be enabled.)) - COMING SOON
+apa_alertadmins_threshold :: How much damage should the prop do for admins to be notified. (Default: 80) (Requires: APA.Settings.AlertAdmins to be enabled.))
 
 apa_antipk_punish :: Setting this to 1 will hurt the person who through the prop!)
 
@@ -18,7 +18,7 @@ apa_apcollision :: Setting this to 1 will make props phase through players only,
 
 apa_ghostonspawn :: Setting this to 1 will make it so that props are ghosted when they spawn, while setting it to 0 will disable it!)
 
-apa_nerf :: Setting this to 1 will make it impossible to fling props, while setting it to 0 will allow you to fling props normally. Note: Setting physgun_maxSpeed to 400 (Default: 5000), will make this work better, and limmit how fast people can move props with their physgun.)
+apa_nerf :: Setting this to 1 will make it impossible to fling props, while setting it to 0 will allow you to fling props normally. Setting this to 2 will also set physgun_maxSpeed to 415 (Default: 5000).
 
 apa_fpp_autoblock :: Setting this to true will attempt to automatically block huge props, setting this to false will disable it! (Requires: Falco's Prop Protection!))
 

@@ -28,15 +28,15 @@ APA.Settings.VehiclesDontHurt = 1
 APA.Settings.BlockExplosions = 1
 -- Setting this to 1 will make vehicles not collide with players.
 APA.Settings.NoCollideVehicles = 1
--- Setting this to 1 will enable Anti Prop Push, setting it to 2 will make this also check constrains, while setting it to 0 will disable it!
-APA.Settings.AntiPush = 1
+-- Setting this to 1 will enable Anti Prop Push, setting it to 2 will nocolide props passively, while setting it to 0 will disable it!
+APA.Settings.AntiPush = 2
 -- Setting this to 1 will make props phase through players only, setting it to 0 will make props phase through every thing! (Requires: APA.Settings.AntiPush to be enabled!)
 APA.Settings.APCollision = 1 --(Requires: APA.Settings.AntiPush to be enabled!)
 -- Setting this to 1 will make it so that props are ghosted when they spawn, while setting it to 0 will disable it!
 APA.Settings.GhostOnSpawn = 1
 -- Setting this to 1 will make it impossible to fling props, while setting it to 0 will allow you to fling props normally.
-APA.Settings.Nerf = 1 -- Note: Setting physgun_maxSpeed to 400 (Default: 5000), will make this work better, and limmit how fast people can move props with their physgun.
--- Setting this to 1 will attempt to automatically block huge props, setting this to 0 will disable it!
+APA.Settings.Nerf = 2 -- Setting this to 1 will make it impossible to fling props, while setting it to 0 will allow you to fling props normally. 
+-- Setting this to 2 will also set physgun_maxSpeed to 415 (Default: 5000).
 APA.Settings.FPP.AutoBlock = 1 -- (Requires: Falco's Prop Protection!)
 APA.Settings.FPP.ABSize = 7.35 --How big a prop should be before it is blocked. (Requires: RemoveBig to be set to 1!)
 APA.Settings.FPP.Sounds = 0 --Setting this to 1 will make an error sound, when a prop is autoblocked. (Requires: AutoBlock to be set to 1!)
@@ -56,15 +56,16 @@ APA.Settings.AutoFreezeTime = 300
 APA.Settings.DamageFreeze = 1
 -- Should we allow gm_spawn (using keybinds)?
 APA.Settings.AllowGMSpawn = 1
--- Do not change this.
-APA.AddonLoaded = false
+
+--------------------------
+APA.AddonLoaded = false -- Do not change this.
+--------------------------
 
 /*----------------------------------------------------------------------------------------------------------------------------------------------------
 -- Add props that you do not want to be auto removed, below.
 ----------------------------------------------------------------------------------------------------------------------------------------------------*/
 
 local AllowedHBigProps = {}
-
 
 /*----------------------------------------------------------------------------------------------------------------------------------------------------
 -- Things that should get frozen when they hit a player.
@@ -124,10 +125,10 @@ APA.Settings.AllowGMSpawn = CreateConVar("apa_gmspawn", APA.Settings.AllowGMSpaw
 APA.Settings.VehiclesDontHurt = CreateConVar("apa_vehiclesdonthurt", APA.Settings.VehiclesDontHurt, {FCVAR_DEMO, FCVAR_GAMEDLL, FCVAR_SERVER_CAN_EXECUTE, FCVAR_NOTIFY}, "Setting this to 1 will stop vehicles from doing damage.")
 APA.Settings.BlockExplosions = CreateConVar("apa_blockexplosions", APA.Settings.BlockExplosions, {FCVAR_DEMO, FCVAR_GAMEDLL, FCVAR_SERVER_CAN_EXECUTE, FCVAR_NOTIFY}, "Setting this to 1 will block explosions, setting it to 0 will disable it!")
 APA.Settings.NoCollideVehicles = CreateConVar("apa_nocollidevehicles", APA.Settings.NoCollideVehicles, {FCVAR_DEMO, FCVAR_GAMEDLL, FCVAR_SERVER_CAN_EXECUTE, FCVAR_NOTIFY}, "Setting this to 1 will make vehicles not collide with players.")
-APA.Settings.AntiPush = CreateConVar("apa_antipush", APA.Settings.AntiPush, {FCVAR_DEMO, FCVAR_GAMEDLL, FCVAR_SERVER_CAN_EXECUTE, FCVAR_NOTIFY}, "Setting this to 1 will enable Anti Prop Push, setting it to 2 will make this also check constrains, while setting it to 0 will disable it!")
+APA.Settings.AntiPush = CreateConVar("apa_antipush", APA.Settings.AntiPush, {FCVAR_DEMO, FCVAR_GAMEDLL, FCVAR_SERVER_CAN_EXECUTE, FCVAR_NOTIFY}, "Setting this to 1 will enable Anti Prop Push, setting it to 2 will nocolide props passively, while setting it to 0 will disable it!")
 APA.Settings.APCollision = CreateConVar("apa_apcollision", APA.Settings.APCollision, {FCVAR_DEMO, FCVAR_GAMEDLL, FCVAR_SERVER_CAN_EXECUTE, FCVAR_NOTIFY}, "Setting this to 1 will make props phase through players only, setting it to 0 will make props phase through every thing! (Requires: apa_antipush to be set to 1!)")
 APA.Settings.GhostOnSpawn = CreateConVar("apa_ghostonspawn", APA.Settings.GhostOnSpawn, {FCVAR_DEMO, FCVAR_GAMEDLL, FCVAR_SERVER_CAN_EXECUTE, FCVAR_NOTIFY}, "Setting this to 1 will make it so that props are ghosted when they spawn, while setting it to 0 will disable it!")
-APA.Settings.Nerf = CreateConVar("apa_nerf", APA.Settings.Nerf, {FCVAR_DEMO, FCVAR_GAMEDLL, FCVAR_SERVER_CAN_EXECUTE, FCVAR_NOTIFY}, "Setting this to 1 will make it impossible to fling props, while setting it to 0 will allow you to fling props normally. Note: Setting physgun_maxSpeed to 400 (Default: 5000), will make this work better, and limmit how fast people can move props with their physgun.")
+APA.Settings.Nerf = CreateConVar("apa_nerf", APA.Settings.Nerf, {FCVAR_DEMO, FCVAR_GAMEDLL, FCVAR_SERVER_CAN_EXECUTE, FCVAR_NOTIFY}, "Setting this to 1 will make it impossible to fling props, while setting it to 0 will allow you to fling props normally. Setting this to 2 will also set physgun_maxSpeed to 415 (Default: 5000).")
 APA.Settings.FPP.AutoBlock = CreateConVar("apa_fpp_autoblock", APA.Settings.FPP.AutoBlock, {FCVAR_DEMO, FCVAR_GAMEDLL, FCVAR_SERVER_CAN_EXECUTE, FCVAR_NOTIFY}, "Setting this to true will attempt to automatically block huge props, setting this to false will disable it! (Requires: Falco's Prop Protection!)")
 APA.Settings.FPP.ABSize = CreateConVar("apa_fpp_absize", APA.Settings.FPP.ABSize, {FCVAR_DEMO, FCVAR_GAMEDLL, FCVAR_SERVER_CAN_EXECUTE, FCVAR_NOTIFY}, "How big a prop should be before it is blocked. (Requires: apa_fpp_autoblock to be set to 1!)")
 APA.Settings.FPP.Sounds = CreateConVar("apa_fpp_sounds", APA.Settings.FPP.Sounds, {FCVAR_DEMO, FCVAR_GAMEDLL, FCVAR_SERVER_CAN_EXECUTE, FCVAR_NOTIFY}, "Setting this to 1 will make an error sound, when a prop is autoblocked.")
@@ -303,7 +304,9 @@ local function APAntiLoad()
 	function APA.FindOwner( ent )
 		local owner = owner or nil
 		local cppi = cppi or nil
-		if (ent:CPPIGetOwner()) then cppi,_ = ent:CPPIGetOwner() end
+		if ent.CPPIGetOwner and ent:CPPIGetOwner() then 
+			cppi,_ = ent:CPPIGetOwner() 
+		end
 		owner = cppi or ent.FPPOwner or ent.Owner
 		return owner
 	end
@@ -419,8 +422,10 @@ local function APAntiLoad()
 
 	hook.Add( "PlayerSpawnedProp", "APAntiExplode", function( _, _, prop )
 		if( prop and IsValid(prop) and APA.Settings.BlockExplosions:GetInt() >= 1 ) then
-			prop:SetKeyValue("ExplodeDamage", "0") 
-			prop:SetKeyValue("ExplodeRadius", "0")
+			if not string.find( string.lower(prop:GetClass()), "wire" ) then -- Quick fix for wiremod.
+				prop:SetKeyValue("ExplodeDamage", "0") 
+				prop:SetKeyValue("ExplodeRadius", "0")
+			end
 		end
 	end)
 
@@ -528,15 +533,18 @@ local function APAntiLoad()
 	end
 
 	function APA.Ghost.CanOff( ent )
-		local mins, maxs = ent:LocalToWorld(ent:OBBMins( )), ent:LocalToWorld(ent:OBBMaxs( ))
-		local cube = ents.FindInBox( mins, maxs )
-		local owner = nil
+		local mins, maxs = ent:LocalToWorld(ent:OBBMins()), ent:LocalToWorld(ent:OBBMaxs())
+		local cube = ents.FindInBox( mins+Vector(-25,-25,-25), maxs+Vector(25,25,25) )
+		local owner = false, nil
 
 		if APA.Settings.AntiPush:GetInt() >= 1 then owner = APA.FindOwner( ent ) end
 
 		for _,v in pairs(cube) do
 			local PhysObj = v:GetPhysicsObject()
-			if( ( IsValid(v) and v:GetModel() and v != ent ) and ( PhysObj and PhysObj:IsValid() and PhysObj:IsMotionEnabled() ) and ( IsValid(APA.FindOwner( v )) ) or v:IsPlayer() or v:IsNPC() ) then
+			local canGetModel = false; if v:GetModel() ~= nil then canGetModel = true end
+			local vV, mV = false, (IsValid(v) and canGetModel and v ~= ent), (PhysObj and PhysObj:IsValid() and PhysObj:IsMotionEnabled())
+			if( (vV and mV) and IsValid(APA.FindOwner(v)) or v:IsPlayer() or v:IsNPC() ) then
+				if v:GetClass() == "prop_physics" and (APA.FindOwner(v) == APA.FindOwner(ent)) then return true end
 				if not ent.APAIsObscured then
 					if APA.Settings.AntiPush:GetInt() >= 1 then APA.Notify(owner, "Prop Obscured!", NOTIFY_ERROR, 2, 0) end
 					ent.APAIsObscured = true
@@ -589,7 +597,7 @@ local function APAntiLoad()
 				if ent.APGhostOff or APA.Settings.AntiPush:GetInt() >= 1 then
 					if ent.APGhostOff then
 						local MotionEnabled, PhysObj = false, ent:GetPhysicsObject(); if( IsValid(PhysObj) ) then MotionEnabled = PhysObj:IsMotionEnabled() end
-						if APA.Settings.AntiPush:GetInt() >= 1 then
+						if APA.Settings.AntiPush:GetInt() >= 2 then
 							if (ent:GetVelocity():Distance( Vector( 0.1, 0.1, 0.1 ) ) > 0.2 and MotionEnabled) then
 								APA.Ghost.On( nil, ent, true )
 							end
@@ -658,6 +666,12 @@ local function APAntiLoad()
 	end)
 
 	--PHYSGUN-THROW-NERF--
+	if APA.Settings.Nerf:GetInt() >= 2 then RunConsoleCommand( "physgun_maxSpeed", 415 ) end
+
+	cvars.AddChangeCallback( "apa_nerf", function( _, _, val )
+		if tonumber(val) >= 2 then RunConsoleCommand( "physgun_maxSpeed", 415 ) end
+	end )
+
 	hook.Add( "PhysgunDrop", "APAntiPropPush-Nerf", function( _, ent )
 		if APA.Settings.Nerf:GetInt() >= 1 then
 			if( ent and (ent:IsValid() and !ent:IsPlayer() and not APA.IsWorld( ent )) and ent:GetPhysicsObject() ) then 
@@ -783,13 +797,16 @@ hook.Add("PlayerConnect", "APAnti-Execution-Hook", function() -- Contrary to oth
 	if not APA.AddonLoaded then
 		if #player.GetAll() <= 1 then
 			MsgAll("\n<|||APAnti Is Loading...|||>\n")
-			timer.Simple( 0.5, function() APAntiLoad() end )
+			APAntiLoad()
 		end
 	end
 end)
 
--- hook.Add("PlayerInitialSpawn", function( ply ) timer.Simple(10, ply:PrintMessage( HUD_PRINTCONSOLE, "\nThis server is running APAnti by LuaTenshi.\n") end) end)
--- Is it bad if I want to let people know that the server is running my addon?
+concommand.Add( "apa_help", function() 
+	print( file.Read( "apa_help.txt", "DATA" ) )
+end, _, _, FCVAR_DEMO, FCVAR_GAMEDLL, FCVAR_SERVER_CAN_EXECUTE )
+
+-- concommand.Add("j", function() APAntiLoad() end)
 
 -- hook.Add("EntityTakeDamage","__ap",function(t,d) if( d:GetAttacker():GetClass() == "prop_physics" or d:GetInflictor():GetClass() == "prop_physics" or d:GetDamageType() == DMG_CRUSH ) then d:SetDamage(0) d:ScaleDamage(0) end end)
 -- hook.Add( "PlayerSpawnedProp", "__ex", function( _, _, p ) if( p and IsValid(p) ) then p:SetKeyValue("ExplodeDamage", "0") p:SetKeyValue("ExplodeRadius", "0") end end)
