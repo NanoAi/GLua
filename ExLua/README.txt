@@ -4,7 +4,7 @@ ExLua Credits:
     - LuaTenshi ( https://github.com/LuaTenshi )
     - YVL ( https://github.com/YVL- )
     - TheLastPenguin ( https://github.com/TheLastPenguin )
-    - And all other contributers that I may have not mentioned. <3
+    - And all other contributers that I may have not mentioned. :heart:
 -----------
 Note: EasyLua is currently completly broken so do not try to turn it on I do plan to add support in the future however.
 EasyLua Credits: CapsAdmin ( https://github.com/CapsAdmin/ )
