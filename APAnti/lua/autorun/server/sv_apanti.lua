@@ -35,7 +35,7 @@ APA.Settings.APCollision = 1 --(Requires: APA.Settings.AntiPush to be enabled!)
 -- Setting this to 1 will make it so that props are ghosted when they spawn, while setting it to 0 will disable it!
 APA.Settings.GhostOnSpawn = 1
 -- Setting this to 1 will make it impossible to fling props, while setting it to 0 will allow you to fling props normally.
-APA.Settings.Nerf = 2 -- Setting this to 1 will make it impossible to fling props, while setting it to 0 will allow you to fling props normally. 
+APA.Settings.Nerf = 3 -- Setting this to 1 will make it impossible to fling props, while setting it to 0 will allow you to fling props normally. 
 -- Setting this to 2 will also set physgun_maxSpeed to 415 (Default: 5000).
 APA.Settings.FPP.AutoBlock = 1 -- (Requires: Falco's Prop Protection!)
 APA.Settings.FPP.ABSize = 7.35 --How big a prop should be before it is blocked. (Requires: RemoveBig to be set to 1!)
@@ -153,6 +153,7 @@ hook.Add( "InitPostEntity", "_APAGetWorldEnts", function()
 	APAWorldEnts = {} -- Make sure that the table is empty.
 	-----------
 	timer.Simple( 1.5, function()
+		APA.AddonLoaded = false;
 		for _,v in pairs(ents.GetAll()) do
 			table.insert( APAWorldEnts, v )
 		end
@@ -161,6 +162,7 @@ end )
 
 local function APAntiLoad()
 
+	APA.AddonLoaded = true -- This should now reload the script if the map changes.
 	if not (CPPI and CPPI.GetVersion()) then MsgC( Color( 255, 0, 0 ), "ERROR: CPPI not found, Prop protection not installed?") return end
 	-- This only works if we have CPPI, sorry.
 
@@ -467,6 +469,11 @@ local function APAntiLoad()
 		if ip then return false end
 
 		if not ( o and IsValid(o) ) then return false end
+
+		if APA.Settings.Nerf:GetInt() >= 3 and ent.GetPhysicsObject then
+			local phys = ent:GetPhysicsObject();
+			if phys and IsValid(phys) then phys:SetMass(0.5); end
+		end
 		
 		if o:IsPlayer() then if ( o == picker or cp ) then return true end end
 	end
@@ -565,6 +572,14 @@ local function APAntiLoad()
 			if( spoof or ( APA.CanPickup( picker, ent ) ) ) then
 				ent.APGhost = nil
 				ent:DrawShadow(true)
+
+				if ent.GetPhysicsObject then
+					local phys = ent:GetPhysicsObject()
+					if( phys and IsValid(phys) ) then
+						phys:AddAngleVelocity( phys:GetAngleVelocity() * -1 )
+						phys:SetVelocityInstantaneous( Vector(0,0,0) )
+					end
+				end
 
 				if ent.OldColor then ent:SetColor(Color(ent.OldColor.r, ent.OldColor.g, ent.OldColor.b, ent.OldColor.a)) end
 				ent.OldColor = nil
@@ -666,7 +681,7 @@ local function APAntiLoad()
 	end)
 
 	--PHYSGUN-THROW-NERF--
-	if APA.Settings.Nerf:GetInt() >= 2 then RunConsoleCommand( "physgun_maxSpeed", 415 ) end
+	if APA.Settings.Nerf:GetInt() >= 2 and APA.Settings.Nerf:GetInt() < 4 then RunConsoleCommand( "physgun_maxSpeed", 415 ) end
 
 	cvars.AddChangeCallback( "apa_nerf", function( _, _, val )
 		if tonumber(val) >= 2 then RunConsoleCommand( "physgun_maxSpeed", 415 ) end
@@ -800,6 +815,10 @@ hook.Add("PlayerConnect", "APAnti-Execution-Hook", function() -- Contrary to oth
 			APAntiLoad()
 		end
 	end
+end)
+
+hook.Add("PostGamemodeLoaded", "APAnti-ReloadOnMap", function() 
+	APA.AddonLoaded = false; APAntiLoad(); 
 end)
 
 concommand.Add( "apa_help", function() 
