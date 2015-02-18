@@ -112,7 +112,7 @@ local ClassWhitelist = {
 /*----------------------------------------------------------------------------------------------------------------------------------------------------
 -- Added a damage black list, to cancle out the damage of entities that happen to return invalid or for some reason don't have a class.
 ----------------------------------------------------------------------------------------------------------------------------------------------------*/
-local DamageBlackList = { DMG_CRUSH, DMG_SLASH, DMG_CLUB, DMG_DIRECT, DMG_PHYSGUN }
+local DamageBlackList = { DMG_CRUSH, DMG_SLASH, DMG_CLUB, DMG_DIRECT, DMG_PHYSGUN, DMG_VEHICLE }
 
 /*----------------------------------------------------------------------------------------------------------------------------------------------------
 -- Congradulations, you are now ready to start using this script on your server! If you get any errors please report them to me!
@@ -591,6 +591,7 @@ local function APAntiLoad()
 					if( phys and IsValid(phys) ) then
 						phys:AddAngleVelocity( phys:GetAngleVelocity() * -1 )
 						phys:SetVelocityInstantaneous( Vector(0,0,0) )
+						if APA.Settings.ForceFreeze:GetInt() >= 1 then phys:EnableMotion(false) end
 					end
 				end
 
@@ -643,7 +644,7 @@ local function APAntiLoad()
 	timer.Create( "APAntiAutoFreezeTimer", APA.Settings.AutoFreezeTime:GetInt(), 0, function() 
 		if APA.Settings.AutoFreeze:GetInt() >= 1 then
 			for _,ent in pairs(ents.FindByClass("prop_physics")) do
-				if ent and IsValid(ent) then
+				if ent and IsValid(ent) and ent.GetPhysicsObject then
 					local phys = ent:GetPhysicsObject()
 					if phys:IsValid() then
 						phys:EnableMotion(false)
@@ -676,7 +677,7 @@ local function APAntiLoad()
 			if APA.Settings.AntiPush:GetInt() <= 0 then APA.Ghost.Off( picker, ent, true ) end -- Unghost props a little faster.
 			ent.APGhostOff = true
 			-----------
-			if APA.Settings.ForceFreeze:GetInt() >= 1 and IsValid(ent) then
+			if APA.Settings.ForceFreeze:GetInt() >= 1 and IsValid(ent) and not ( ent:IsPlayer() or ent:IsNPC() ) then
 				local phys = ent:GetPhysicsObject()
 				if IsValid(phys) then phys:EnableMotion(false) end
 			end
@@ -728,7 +729,15 @@ local function APAntiLoad()
 	end)
 
 	--Block GMSpawn
-	hook.Add("Move", "_APA.Settings.AllowGMSpawn", function( ply, mv )
+	hook.Add("Move", "_APA.Settings.AllowGMSpawn", function( ply )
+		if APA.Settings.AllowGMSpawn:GetInt() >= 1 then
+			net.Start("sBlockGMSpawn")
+				net.WriteFloat(tonumber(APA.Settings.AllowGMSpawn:GetInt()))
+			net.Send(ply)
+		end
+	end)
+
+	hook.Add("PlayerSpawnObject", "_APA.Settings.AllowGMSpawn", function( ply )
 		if APA.Settings.AllowGMSpawn:GetInt() >= 1 then
 			net.Start("sBlockGMSpawn")
 				net.WriteFloat(tonumber(APA.Settings.AllowGMSpawn:GetInt()))
@@ -789,33 +798,29 @@ local function APAntiLoad()
 		return false
 	end
 
-	hook.Add("PlayerSpawnObject", "_APAModelBypassFix", function(ply, model)
+	local function APAPropSpawnEvent(ply, model)
 		local model = APA.ModelNameFix( model );
 		local arrested, APAblocked = false, isBlocked(model);
 
 		if ply.isArrested && type(ply.isArrested) == "function" then arrested = ply:isArrested() end
 
 		if ply.jail or ply.frozen or ply:IsFrozen() or arrested then
-			ply:ChatPrint("Sorry, you can't do that right now.");
-			return false 
+			APA.Notify(ply, "Sorry, you can't do that right now.", NOTIFY_ERROR, 10, 1)
+			model = ""; return false
 		end
 
 		if APAblocked then
 			APA.Notify(ply, "That model seems to be blocked, sorry.", NOTIFY_ERROR, 10, 1)
-			return false 
+			model = ""; return false
 		end
-	end)
-	---------------
-	hook.Add("PlayerSpawnProp", "_APAModelBypassFix_", function(ply, model)
-		local model = APA.ModelNameFix( model );
-		local arrested = false;
+	end
 
-		if ply.isArrested && type(ply.isArrested) == "function" then arrested = ply:isArrested() end
-
-		if ply.jail or ply.frozen or ply:IsFrozen() or arrested then
-			return false 
-		end
-	end)
+	hook.Add("PlayerSpawnObject", "_APAModelBypassFix_", APAPropSpawnEvent)
+	hook.Add("PlayerSpawnProp", "_APAModelBypassFix_", APAPropSpawnEvent)
+	hook.Add("PlayerSpawnedEffect", "_APAModelBypassFix_", APAPropSpawnEvent)
+	hook.Add("PlayerSpawnedRagdoll", "_APAModelBypassFix_", APAPropSpawnEvent)
+	hook.Add("PlayerSpawnSENT", "_APAModelBypassFix_", APAPropSpawnEvent)
+	hook.Add("PlayerSpawnVehicle", "_APAModelBypassFix_", APAPropSpawnEvent)
 
 	MsgAll("\n<|||APAnti Is Now Running!|||>\n")
 	APA.AddonLoaded = true -- This should now reload the script if the map changes.
