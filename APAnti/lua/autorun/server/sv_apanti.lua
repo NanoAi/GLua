@@ -108,6 +108,12 @@ local ClassWhitelist = {
 	"npc_satchel" -- Ditto.
 }
 
+
+/*----------------------------------------------------------------------------------------------------------------------------------------------------
+-- Added a damage black list, to cancle out the damage of entities that happen to return invalid or for some reason don't have a class.
+----------------------------------------------------------------------------------------------------------------------------------------------------*/
+local DamageBlackList = { DMG_CRUSH, DMG_SLASH, DMG_CLUB, DMG_DIRECT, DMG_PHYSGUN }
+
 /*----------------------------------------------------------------------------------------------------------------------------------------------------
 -- Congradulations, you are now ready to start using this script on your server! If you get any errors please report them to me!
 -- WARNING: Do not edit any thing below this line unless you know what you are doing!
@@ -359,62 +365,69 @@ local function APAntiLoad()
 
 	function APA.antiPk( target, dmginfo )
 		if( APA.Settings.AntiPK:GetInt() >= 1 ) then
-			local entClass = dmginfo:GetInflictor():GetClass()
-			local badEntity, goodEntity = APA.EntityCheck( entClass )
 
-			local atker, inflictor, dmg = dmginfo:GetAttacker(), dmginfo:GetInflictor(), dmginfo:GetDamage()
+			local daEnt = dmginfo:GetInflictor()
 
-			if APA.Settings.VehiclesDontHurt:GetInt() >= 1 and not badEntity then
-				if dmginfo:GetDamageType() == DMG_VEHICLE or atker:IsVehicle() or inflictor:IsVehicle() then -- Is a vehicle doing this?
-					dmginfo:SetDamage(0)	dmginfo:ScaleDamage( 0 )
-				end
-			end
+			if (daEnt and IsValid(daEnt) and daEnt.GetClass) then
+				local entClass = daEnt:GetClass()
+				local badEntity, goodEntity = APA.EntityCheck( entClass )
 
-			if APA.Settings.BlockExplosions:GetInt() == 2 and not badEntity then -- Stop damage from explosives.
-				if dmginfo:IsExplosionDamage() then -- Is this explosion damage?
-					dmginfo:SetDamage(0)	dmginfo:ScaleDamage( 0 )
-				end
-			end
+				local atker, inflictor, dmg = dmginfo:GetAttacker(), dmginfo:GetInflictor(), dmginfo:GetDamage()
 
-			if ( dmginfo:GetDamageType() == DMG_CRUSH or badEntity ) and !goodEntity then
-
-				local strt = {}; strt.aname = "<N/A>"; strt.asteam = "<N/A>"; strt.tname = "<N/A>"; strt.tsteam ="<N/A>";
-				atker, inflictor, dmg = dmginfo:GetAttacker(), dmginfo:GetInflictor(), dmginfo:GetDamage()
-				-- Reconfirm...
-
-				dmginfo:SetDamage(0)	dmginfo:ScaleDamage( 0 )
-
-				atker = APA.FindKiller( atker, inflictor )
-				if( atker and IsValid(atker) and atker:IsPlayer() and target and IsValid(target) and target:IsPlayer() ) then
-					if(atker != target) then
-						if( !atker.APAWarned ) then
-							strt.aname = atker:GetName(); strt.asteam = atker:SteamID(); strt.tname = target:GetName(); strt.tsteam = target:SteamID();
-							-------------------------------
-							APA.DMsg( strt, dmg  )
-							atker.APAWarned = true
-							timer.Simple(0.25, function() atker.APAWarned = false end) --Removing console spam.
-						end
-
-						if APA.Settings.DamageFreeze:GetInt() >= 1 then
-							if dmg >= APA.Settings.DamageReturnThreshold:GetInt() then
-								ent = APA.FindProp( atker, inflictor )
-								if( ent and IsValid(ent) ) then
-									local phys = ent:GetPhysicsObject()
-									if phys then phys:EnableMotion(false) end
-								end
-							end
-						end
-
-						if APA.Settings.DamageReturn:GetInt() >= 1 then
-							if dmg >= APA.Settings.DamageReturnThreshold:GetInt() then
-								timer.Create( "__APADamageReturn", 0.25, 1, function() atker:TakeDamage( dmg, atker, atker ) end) --I hope the return to sender works now.
-								--									|_ We delay by a quarter of a second to stop the script from doing double damage or hurting the wrong player.
-							end
-						end
+				if APA.Settings.VehiclesDontHurt:GetInt() >= 1 and not badEntity then
+					if dmginfo:GetDamageType() == DMG_VEHICLE or atker:IsVehicle() or inflictor:IsVehicle() then -- Is a vehicle doing this?
+						dmginfo:SetDamage(0)	dmginfo:ScaleDamage( 0 )
 					end
 				end
 
-				dmginfo:SetDamage(0)	dmginfo:ScaleDamage( 0 ) -- For some reason this needs to be called again here or else the prop still does damage.
+				if APA.Settings.BlockExplosions:GetInt() == 2 and not badEntity then -- Stop damage from explosives.
+					if dmginfo:IsExplosionDamage() then -- Is this explosion damage?
+						dmginfo:SetDamage(0)	dmginfo:ScaleDamage( 0 )
+					end
+				end
+
+				if ( dmginfo:GetDamageType() == DMG_CRUSH or badEntity ) and !goodEntity then
+
+					local strt = {}; strt.aname = "<N/A>"; strt.asteam = "<N/A>"; strt.tname = "<N/A>"; strt.tsteam ="<N/A>";
+					atker, inflictor, dmg = dmginfo:GetAttacker(), dmginfo:GetInflictor(), dmginfo:GetDamage()
+					-- Reconfirm...
+
+					dmginfo:SetDamage(0)	dmginfo:ScaleDamage( 0 )
+
+					atker = APA.FindKiller( atker, inflictor )
+					if( atker and IsValid(atker) and atker:IsPlayer() and target and IsValid(target) and target:IsPlayer() ) then
+						if(atker != target) then
+							if( !atker.APAWarned ) then
+								strt.aname = atker:GetName(); strt.asteam = atker:SteamID(); strt.tname = target:GetName(); strt.tsteam = target:SteamID();
+								-------------------------------
+								APA.DMsg( strt, dmg  )
+								atker.APAWarned = true
+								timer.Simple(0.25, function() atker.APAWarned = false end) --Removing console spam.
+							end
+
+							if APA.Settings.DamageFreeze:GetInt() >= 1 then
+								if dmg >= APA.Settings.DamageReturnThreshold:GetInt() then
+									ent = APA.FindProp( atker, inflictor )
+									if( ent and IsValid(ent) ) then
+										local phys = ent:GetPhysicsObject()
+										if phys then phys:EnableMotion(false) end
+									end
+								end
+							end
+
+							if APA.Settings.DamageReturn:GetInt() >= 1 then
+								if dmg >= APA.Settings.DamageReturnThreshold:GetInt() then
+									timer.Create( "__APADamageReturn", 0.25, 1, function() atker:TakeDamage( dmg, atker, atker ) end) --I hope the return to sender works now.
+									--									|_ We delay by a quarter of a second to stop the script from doing double damage or hurting the wrong player.
+								end
+							end
+						end
+					end
+
+					dmginfo:SetDamage(0)	dmginfo:ScaleDamage( 0 ) -- For some reason this needs to be called again here or else the prop still does damage.
+				end
+			elseif ( table.HasValue( DamageBlackList, dmginfo:GetDamageType() ) ) then
+				dmginfo:SetDamage(0)	dmginfo:ScaleDamage( 0 )
 			end
 		end
 	end
