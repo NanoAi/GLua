@@ -364,23 +364,32 @@ local function APAntiLoad()
 	end
 
 	local function APADamageFilter( dmginfo, atker, inflictor, badEntity, exeption )
-		if APA.Settings.VehiclesDontHurt:GetInt() >= 1 and not badEntity then
-			if dmginfo:GetDamageType() == DMG_VEHICLE or atker:IsVehicle() or inflictor:IsVehicle() then -- Is a vehicle doing this?
-				dmginfo:SetDamage(0)	dmginfo:ScaleDamage( 0 )
+		if APA.Settings.VehiclesDontHurt:GetInt() >= 1 and badEntity then
+			if ( dmginfo:GetDamageType() == DMG_CRUSH or dmginfo:GetDamageType() == DMG_VEHICLE ) or atker:IsVehicle() or inflictor:IsVehicle() then -- Is a vehicle doing this?
+				dmginfo:SetDamage(0)
+				dmginfo:ScaleDamage(0)
+				dmginfo:SetDamageForce(Vector(0,0,0))
+				return dmginfo,true
 			end
 		end
 
-		if APA.Settings.BlockExplosions:GetInt() == 2 and not badEntity then -- Stop damage from explosives.
+		if APA.Settings.BlockExplosions:GetInt() == 2 and badEntity then -- Stop damage from explosives.
 			if dmginfo:IsExplosionDamage() then -- Is this explosion damage?
-				dmginfo:SetDamage(0)	dmginfo:ScaleDamage( 0 )
+				dmginfo:SetDamage(0)
+				dmginfo:ScaleDamage(0)
+				dmginfo:SetDamageForce(Vector(0,0,0))
+				return dmginfo,true
 			end
 		end
 
 		if ( exeption ) then
-			dmginfo:SetDamage(0)	dmginfo:ScaleDamage( 0 )
+			dmginfo:SetDamage(0)
+			dmginfo:ScaleDamage(0)
+			dmginfo:SetDamageForce(Vector(0,0,0))
+			return dmginfo,true
 		end
 
-		return dmginfo
+		return dmginfo,false
 	end
 
 	function APA.antiPk( target, dmginfo )
@@ -388,21 +397,24 @@ local function APAntiLoad()
 
 			local atker, inflictor, dmg = dmginfo:GetAttacker(), dmginfo:GetInflictor(), dmginfo:GetDamage()
 			local daEnt = ( inflictor and IsValid(inflictor) and inflictor.GetClass ) and inflictor or ( atker and IsValid(atker) and atker.GetClass ) and atker or nil
-			
+
 			if ( daEnt and IsValid(daEnt) ) then
 
 				local entClass = daEnt:GetClass()
 				local badEntity, goodEntity = APA.EntityCheck( entClass )
 
-				dmginfo = APADamageFilter( dmginfo, atker, inflictor, badEntity, false )
+				dmginfo,shouldexit = APADamageFilter( dmginfo, atker, inflictor, badEntity, false );
+				if shouldexit then return true end
 
-				if ( dmginfo:GetDamageType() == DMG_CRUSH or badEntity ) and !goodEntity then
+				if ( dmginfo:GetDamageType() == DMG_CRUSH or badEntity ) and !( atker:IsVehicle() or inflictor:IsVehicle() ) and !goodEntity then
 
 					local strt = {}; strt.aname = "<N/A>"; strt.asteam = "<N/A>"; strt.tname = "<N/A>"; strt.tsteam ="<N/A>";
 					atker, inflictor, dmg = dmginfo:GetAttacker(), dmginfo:GetInflictor(), dmginfo:GetDamage()
 					-- Reconfirm...
 
-					dmginfo:SetDamage(0)	dmginfo:ScaleDamage( 0 )
+					dmginfo:SetDamage(0)
+					dmginfo:ScaleDamage(0)
+					dmginfo:SetDamageForce(Vector(0,0,0))
 
 					atker = APA.FindKiller( atker, inflictor )
 					if( atker and IsValid(atker) and atker:IsPlayer() and target and IsValid(target) and target:IsPlayer() ) then
@@ -434,10 +446,11 @@ local function APAntiLoad()
 						end
 					end
 
-					dmginfo:SetDamage(0)	dmginfo:ScaleDamage( 0 ) -- For some reason this needs to be called again here or else the prop still does damage.
+					return true
 				end
 			elseif ( table.HasValue( DamageBlackList, dmginfo:GetDamageType() ) ) then
-				dmginfo = APADamageFilter( dmginfo, atker, inflictor, nil, true )
+				dmginfo,shouldexit = APADamageFilter( dmginfo, atker, inflictor, nil, true )
+				if shouldexit then return true end
 			end
 		end
 	end
