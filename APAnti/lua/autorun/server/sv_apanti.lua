@@ -493,9 +493,11 @@ local function APAntiLoad()
 
 		if not ( o and IsValid(o) ) then return false end
 
-		if APA.Settings.Nerf:GetInt() >= 3 and ent.GetPhysicsObject then
-			local phys = ent:GetPhysicsObject();
-			if phys and IsValid(phys) then phys:SetMass(0.5); end
+		if APA.Settings.Nerf:GetInt() >= 3 and ( ent and ent.GetPhysicsObject and ent.GetClass ) then
+			if ent:GetClass() == "prop_physics" then
+				local phys = ent:GetPhysicsObject();
+				if phys and IsValid(phys) then phys:SetMass(0.5); end
+			end
 		end
 		
 		if o:IsPlayer() then if ( o == picker or cp ) then return true end end
