@@ -363,7 +363,7 @@ local function APAntiLoad()
 		return badEntity, goodEntity
 	end
 
-	local function APADamageFilter( dmginfo, atker, inflictor, exeption )
+	local function APADamageFilter( dmginfo, atker, inflictor, badEntity, exeption )
 		if APA.Settings.VehiclesDontHurt:GetInt() >= 1 and not badEntity then
 			if dmginfo:GetDamageType() == DMG_VEHICLE or atker:IsVehicle() or inflictor:IsVehicle() then -- Is a vehicle doing this?
 				dmginfo:SetDamage(0)	dmginfo:ScaleDamage( 0 )
@@ -394,7 +394,7 @@ local function APAntiLoad()
 				local entClass = daEnt:GetClass()
 				local badEntity, goodEntity = APA.EntityCheck( entClass )
 
-				dmginfo = APADamageFilter( dmginfo, atker, inflictor, false )
+				dmginfo = APADamageFilter( dmginfo, atker, inflictor, badEntity, false )
 
 				if ( dmginfo:GetDamageType() == DMG_CRUSH or badEntity ) and !goodEntity then
 
@@ -437,7 +437,7 @@ local function APAntiLoad()
 					dmginfo:SetDamage(0)	dmginfo:ScaleDamage( 0 ) -- For some reason this needs to be called again here or else the prop still does damage.
 				end
 			elseif ( table.HasValue( DamageBlackList, dmginfo:GetDamageType() ) ) then
-				dmginfo = APADamageFilter( dmginfo, atker, inflictor, true )
+				dmginfo = APADamageFilter( dmginfo, atker, inflictor, nil, true )
 			end
 		end
 	end
