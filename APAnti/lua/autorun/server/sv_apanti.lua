@@ -236,6 +236,7 @@ local function APAntiLoad()
 	end
 
 	function APA.AMsg( tb, ply )
+		if tb == nil then return end
 		if not type(tb) == "table" then return end
 
 		if not tb.aname then return end
