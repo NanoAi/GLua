@@ -45,7 +45,7 @@ APA.Settings.Blacklist = 1
 -- Set to 1 to enable the Whitelist, and to 0 to disable it!
 APA.Settings.Whitelist = 1
 -- Set to 1 to make weapons not collide with any thing except the world, and set to 0 to make weapons collide like normal.
-APA.Settings.NoCollideWeapons = 1
+APA.Settings.NoCollideWeapons = 0
 -- Set to 1 to automatically freeze props when they are dropped, and set to 0 to disable.
 APA.Settings.ForceFreeze = 0
 -- Set to 1 to automatically freeze props over time, and set to 0 to disable. (Requires: Map restart.)
@@ -55,7 +55,7 @@ APA.Settings.AutoFreezeTime = 300
 -- Should a prop that hits a player be frozen?
 APA.Settings.DamageFreeze = 1
 -- Should we allow gm_spawn (using keybinds)?
-APA.Settings.AllowGMSpawn = 1
+APA.Settings.AllowGMSpawn = 0
 
 --------------------------
 APA.AddonLoaded = false -- Do not change this.
@@ -169,7 +169,10 @@ end )
 local function APAntiLoad()
 
 	APA.AddonLoaded = true -- This should now reload the script if the map changes.
-	if not (CPPI and CPPI.GetVersion()) then MsgC( Color( 255, 0, 0 ), "ERROR: CPPI not found, Prop protection not installed?") return end
+	if not (CPPI and CPPI.GetVersion and CPPI.GetVersion()) then 
+		MsgC( Color( 255, 0, 0 ), "ERROR: CPPI not found, Prop protection not installed?") 
+		return 
+	end
 	-- This only works if we have CPPI, sorry.
 
 	function APA.Notify(ply, str, ctype, time, alert)
@@ -236,6 +239,7 @@ local function APAntiLoad()
 	end
 
 	function APA.AMsg( tb, ply )
+		if not tb then return end
 		if not type(tb) == "table" then return end
 
 		if not tb.aname then return end
@@ -255,6 +259,7 @@ local function APAntiLoad()
 
 	function APA.DMsg( strt, dmg )
 		local t = strt
+		if not t then return end
 		if not type(t) == "table" then return end
 
 		if not t.aname then return end
@@ -280,13 +285,13 @@ local function APAntiLoad()
 			if APA.Settings.AlertAdmins:GetInt() >= 2 then
 				for _,v in pairs(player.GetAll()) do
 					if v and v:IsSuperAdmin() then
-						APA.AMsg( tb, ply )
+						APA.AMsg( t, ply )
 					end
 				end
 			elseif APA.Settings.AlertAdmins:GetInt() == 1 then
 				for _,v in pairs(player.GetAll()) do
 					if v and ( v:IsSuperAdmin() or v:IsAdmin() ) then
-						APA.AMsg( tb, ply )
+						APA.AMsg( t, ply )
 					end
 				end
 			end
