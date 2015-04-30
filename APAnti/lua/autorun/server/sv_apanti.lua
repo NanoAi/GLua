@@ -55,11 +55,19 @@ APA.Settings.AutoFreezeTime = 300
 -- Should a prop that hits a player be frozen?
 APA.Settings.DamageFreeze = 1
 -- Should we allow gm_spawn (using keybinds)?
-APA.Settings.AllowGMSpawn = 0
+APA.Settings.AllowGMSpawn = 1
 
 --------------------------
 APA.AddonLoaded = false -- Do not change this.
 --------------------------
+
+/*----------------------------------------------------------------------------------------------------------------------------------------------------
+-- Developer Locks, due to recent complaints I have added this to disable some features of APAnti untill I can fix them, 
+-- If you feel like contributing juse unlock these and have fun testing.
+----------------------------------------------------------------------------------------------------------------------------------------------------*/
+local DEVLOCK = {}
+DEVLOCK.AllowGMSpawn = true -- Set to false to unlock.
+DEVLOCK.AlertAdmins = true -- Set to false to unlock.
 
 /*----------------------------------------------------------------------------------------------------------------------------------------------------
 -- Add props that you do not want to be auto removed, below.
@@ -147,11 +155,17 @@ APA.Settings.AutoFreezeTime = CreateConVar("apa_autofreeze_time", APA.Settings.A
 
 --- DONE ---
 
-util.AddNetworkString("sMsgAdmins")
-util.AddNetworkString("sNotifyHit")
 util.AddNetworkString("sAlertNotice")
 util.AddNetworkString("sMsgStandard")
-util.AddNetworkString("sBlockGMSpawn")
+
+if not DEVLOCK.AlertAdmins then
+	util.AddNetworkString("sMsgAdmins")
+	util.AddNetworkString("sNotifyHit")
+end
+
+if not DEVLOCK.AllowGMSpawn then
+	util.AddNetworkString("sBlockGMSpawn")
+end
 
 local APAWorldEnts = {}
 hook.Add( "InitPostEntity", "_APAGetWorldEnts", function()
@@ -276,11 +290,12 @@ local function APAntiLoad()
 			net.WriteString(ts)
 		net.Broadcast()
 		
-		local strs = string.format("A prop belonging to %s[%s] has hit %s[%s]!", an, as, tn, ts)
+		local strs = string.format("A prop belonging to %s[%s] has hit %s[%s]!\n", an, as, tn, ts)
 		strs = string.format(strs:gsub( "%%", "<p>" ))
 		ServerLog(strs) -- Log to server.
 
 		-- Admin alerts below this line.
+		if DEVLOCK.AlertAdmins then return end
 		if dmg >= APA.Settings.AlertAdminsThreshold:GetInt() then
 			if APA.Settings.AlertAdmins:GetInt() >= 2 then
 				for _,v in pairs(player.GetAll()) do
@@ -759,21 +774,23 @@ local function APAntiLoad()
 	end)
 
 	--Block GMSpawn
-	hook.Add("Move", "_APA.Settings.AllowGMSpawn", function( ply )
-		if APA.Settings.AllowGMSpawn:GetInt() >= 1 then
-			net.Start("sBlockGMSpawn")
-				net.WriteFloat(tonumber(APA.Settings.AllowGMSpawn:GetInt()))
-			net.Send(ply)
-		end
-	end)
+	if not DEVLOCK.AllowGMSpawn then
+		hook.Add("Move", "_APA.Settings.AllowGMSpawn", function( ply )
+			if APA.Settings.AllowGMSpawn:GetInt() >= 1 then
+				net.Start("sBlockGMSpawn")
+					net.WriteFloat(tonumber(APA.Settings.AllowGMSpawn:GetInt()))
+				net.Send(ply)
+			end
+		end)
 
-	hook.Add("PlayerSpawnObject", "_APA.Settings.AllowGMSpawn", function( ply )
-		if APA.Settings.AllowGMSpawn:GetInt() >= 1 then
-			net.Start("sBlockGMSpawn")
-				net.WriteFloat(tonumber(APA.Settings.AllowGMSpawn:GetInt()))
-			net.Send(ply)
-		end
-	end)
+		hook.Add("PlayerSpawnObject", "_APA.Settings.AllowGMSpawn", function( ply )
+			if APA.Settings.AllowGMSpawn:GetInt() >= 1 then
+				net.Start("sBlockGMSpawn")
+					net.WriteFloat(tonumber(APA.Settings.AllowGMSpawn:GetInt()))
+				net.Send(ply)
+			end
+		end)
+	end
 
 	-- Change DarkRP prop handeling.
 

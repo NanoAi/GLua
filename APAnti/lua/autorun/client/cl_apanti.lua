@@ -81,6 +81,7 @@ net.Receive("sAlertNotice", function()
 	end
 end)
 
+--[[--
 local gmblockspawn = 0
 net.Receive("sBlockGMSpawn", function()
 	local n = 0; n = net.ReadFloat() or 0;
@@ -97,3 +98,4 @@ net.Receive("sBlockGMSpawn", function()
 		gmblockspawn = 0
 	end
 end)
+--]]--
