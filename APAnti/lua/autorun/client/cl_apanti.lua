@@ -62,12 +62,13 @@ net.Receive("sMsgAdmins", function()
 end)
 
 net.Receive("sAlertNotice", function()
-	local a,b,c,d = "",0,0,0
+	local a,b,c,d,e = "",0,0,0,{}
 
 	a = net.ReadString()
 	b = net.ReadFloat() or 1
 	c = net.ReadFloat() or 2
 	d = net.ReadFloat() or 0
+	e = net.ReadTable() or {}
 
 	if not a then return end
 
@@ -75,6 +76,9 @@ net.Receive("sAlertNotice", function()
 	a = string.format(a)
 
 	notification.AddLegacy( a, b, c )
+	
+	for k,v in next, e do e[k] = escape(e[k]) end
+	MsgC(Color( 255, 0, 0 ), string.format("Your prop, %s is being obscured by %s\n", e[1], e[2]))
 
 	if d >= 1 or tobool(d) then
 		surface.PlaySound("ambient/alarms/klaxon1.wav")

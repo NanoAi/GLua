@@ -48,6 +48,8 @@ APA.Settings.Whitelist = 1
 APA.Settings.NoCollideWeapons = 0
 -- Set to 1 to automatically freeze props when they are dropped, and set to 0 to disable.
 APA.Settings.ForceFreeze = 0
+-- Freeze props that are attempting to get unghosted.
+APA.Settings.GhostFreeze = 0
 -- Set to 1 to automatically freeze props over time, and set to 0 to disable. (Requires: Map restart.)
 APA.Settings.AutoFreeze = 0
 -- How long to wait before freezing all props. (Default: 300) (Requires: apa_autofreeze to be set to 1!)
@@ -150,6 +152,7 @@ APA.Settings.Blacklist = CreateConVar("apa_blacklist", APA.Settings.Blacklist, {
 APA.Settings.Whitelist = CreateConVar("apa_whitelist", APA.Settings.Whitelist, {FCVAR_DEMO, FCVAR_GAMEDLL, FCVAR_SERVER_CAN_EXECUTE, FCVAR_NOTIFY}, "Set to 1 to enable the Whitelist, and to 0 to disable it!")
 APA.Settings.NoCollideWeapons = CreateConVar("apa_nocollideweapons", APA.Settings.NoCollideWeapons, {FCVAR_DEMO, FCVAR_GAMEDLL, FCVAR_SERVER_CAN_EXECUTE, FCVAR_NOTIFY}, "Set to 1 to make weapons not collide with any thing except the world, and set to 0 to make weapons collide like normal.")
 APA.Settings.ForceFreeze = CreateConVar("apa_forcefreeze", APA.Settings.ForceFreeze, {FCVAR_DEMO, FCVAR_GAMEDLL, FCVAR_SERVER_CAN_EXECUTE, FCVAR_NOTIFY}, "Set to 1 to automatically freeze props when they are dropped, and set to 0 to disable.")
+APA.Settings.GhostFreeze = CreateConVar("apa_ghostfreeze", APA.Settings.GhostFreeze, {FCVAR_DEMO, FCVAR_GAMEDLL, FCVAR_SERVER_CAN_EXECUTE, FCVAR_NOTIFY}, "Set to 1 to automatically make props sleep and unghost set to 2 to freeze, and set to 0 to disable.")
 APA.Settings.AutoFreeze = CreateConVar("apa_autofreeze", APA.Settings.AutoFreeze, {FCVAR_DEMO, FCVAR_GAMEDLL, FCVAR_SERVER_CAN_EXECUTE, FCVAR_NOTIFY}, "Set to 1 to automatically freeze props over time, and set to 0 to disable. (Requires: Map restart.)")
 APA.Settings.AutoFreezeTime = CreateConVar("apa_autofreeze_time", APA.Settings.AutoFreezeTime, {FCVAR_DEMO, FCVAR_GAMEDLL, FCVAR_SERVER_CAN_EXECUTE, FCVAR_NOTIFY}, "How long to wait before freezing all props. (Default: 300) (Requires: apa_autofreeze to be set to 1!)")
 
@@ -189,7 +192,7 @@ local function APAntiLoad()
 	end
 	-- This only works if we have CPPI, sorry.
 
-	function APA.Notify(ply, str, ctype, time, alert)
+	function APA.Notify(ply, str, ctype, time, alert, moreinfo)
 		if alert >= 1 or tobool(alert) then alert = 1 end
 		---------------------------------
 		if not ply then return end
@@ -206,12 +209,18 @@ local function APAntiLoad()
 		if type(ctype) != "number" then ctype = 1 end -- Must be a number
 		if type(time) != "number" then time = 1 end -- Must be a number
 		if type(alert) != "number" then alert = 0 end -- Must be a number
+		if type(moreinfo) != "table" then moreinfo = nil end -- Must be a table.
+		----------------
+		if moreinfo then
+			for k,v in next, moreinfo do if( type(v) != "string" ) then moreinfo[k] = nil end end
+		end
 		----------------
 		net.Start("sAlertNotice")
 			net.WriteString(str)
 			net.WriteFloat(ctype)
 			net.WriteFloat(time)
 			net.WriteFloat(alert)
+			if moreinfo then net.WriteTable(moreinfo) end
 		net.Send(ply)
 	end
 
@@ -606,12 +615,14 @@ local function APAntiLoad()
 
 		for _,v in pairs(cube) do
 			local PhysObj = v:GetPhysicsObject()
-			local canGetModel = false; if v:GetModel() ~= nil then canGetModel = true end
+			local canGetModel = false; if v.GetModel && v:GetModel() ~= nil then canGetModel = true end
 			local vV, mV = false, (IsValid(v) and canGetModel and v ~= ent), (PhysObj and PhysObj:IsValid() and PhysObj:IsMotionEnabled())
 			if( (vV and mV) and IsValid(APA.FindOwner(v)) or v:IsPlayer() or v:IsNPC() ) then
 				if v:GetClass() == "prop_physics" and (APA.FindOwner(v) == APA.FindOwner(ent)) then return true end
 				if not ent.APAIsObscured then
-					if APA.Settings.AntiPush:GetInt() >= 1 then APA.Notify(owner, "Prop Obscured!", NOTIFY_ERROR, 2, 0) end
+					if APA.Settings.AntiPush:GetInt() >= 1 then 
+						APA.Notify(owner, "Prop Obscured! (See Console)", NOTIFY_ERROR, 2, 0, {ent:GetModel(),tostring(v).."("..v:GetModel()..")"}) 
+					end
 					ent.APAIsObscured = true
 				end
 				return false
@@ -654,6 +665,22 @@ local function APAntiLoad()
 	end
 
 	--ANTI-TRAP--
+	local function tryGhostOff(ent,phys)
+		local phys = phys
+		if (ent.GhostFlickers or 0) >= 15 then
+			if not phys then phys = ent:GetPhysicsObject() end
+			if IsValid(phys) then
+				phys:Sleep()
+				phys:EnableMotion(false)
+			end
+			timer.Simple(0.001, function() for i=0,2 do if IsValid(ent) then
+				ent.GhostFlickers = nil -- Strange code to fix a strange glitch where the value seems to persist.
+			end end end)
+		end
+
+		APA.Ghost.Off(nil, ent, true)
+	end
+
 	timer.Create( "APAntiPropPush-EntityScanner", 0.3, 0, function()
 		for _,ent in pairs(ents.GetAll()) do
 			if (ent:IsWeapon() or ent:GetClass() == "spawned_weapon") and APA.Settings.NoCollideWeapons:GetInt() >= 1 then
@@ -674,10 +701,29 @@ local function APAntiLoad()
 						if APA.Settings.AntiPush:GetInt() >= 2 then
 							if (ent:GetVelocity():Distance( Vector( 0.1, 0.1, 0.1 ) ) > 0.2 and MotionEnabled) then
 								APA.Ghost.On( nil, ent, true )
+								ent.GhostFlickers = (ent.GhostFlickers or 0) + 1
 							end
 						end
-						if ( ( ent:GetVelocity():Distance( Vector( 0.1, 0.1, 0.1 ) ) <= 0.2 or !MotionEnabled ) and ent.APGhost ~= nil ) then
-							APA.Ghost.Off( nil, ent, true )
+
+						local vel = ent:GetVelocity()
+						local velf = (vel.z > 0) && vel.z || (vel.z * -1)
+						local veld = vel:Distance( Vector( 0.1, 0.1, 0.1 ) )
+
+						if ( ( ( veld <= 0.2 ) or !MotionEnabled ) and ent.APGhost ~= nil ) then
+							tryGhostOff(ent,nil)
+						elseif (velf <= 0.1 or ((veld-velf) >= 0.3)) and APA.Settings.GhostFreeze:GetInt() >= 1 and ent.APGhost ~= nil then
+							local phys = ent:GetPhysicsObject()
+							if IsValid(phys) and not (ent:IsPlayer() or ent:IsNPC()) then
+								phys:SetVelocityInstantaneous(Vector(0,0,0))
+								phys:Sleep() 
+							end
+							if APA.Settings.GhostFreeze:GetInt() >= 2 and IsValid(phys) then
+								if phys:IsMotionEnabled() then phys:EnableMotion(false) end
+							end
+							if ( ( veld <= 0.2 ) or !MotionEnabled ) then
+								tryGhostOff(ent,phys) 
+							end
+							---- Sleepy Props Attempt.
 						end
 					end
 				end
