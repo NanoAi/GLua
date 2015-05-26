@@ -77,8 +77,10 @@ net.Receive("sAlertNotice", function()
 
 	notification.AddLegacy( a, b, c )
 	
-	for k,v in next, e do e[k] = escape(e[k]) end
-	MsgC(Color( 255, 0, 0 ), string.format("Your prop, %s is being obscured by %s\n", e[1], e[2]))
+	if e and e ~= {} then
+		for k,v in next, e do e[k] = escape(e[k]) end
+		MsgC(Color( 255, 0, 0 ), string.format("\nYour prop, %s is being obscured by %s\n", e[1], e[2]))
+	end
 
 	if d >= 1 or tobool(d) then
 		surface.PlaySound("ambient/alarms/klaxon1.wav")

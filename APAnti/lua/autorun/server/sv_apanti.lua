@@ -58,6 +58,8 @@ APA.Settings.AutoFreezeTime = 300
 APA.Settings.DamageFreeze = 1
 -- Should we allow gm_spawn (using keybinds)?
 APA.Settings.AllowGMSpawn = 1
+-- Check all spawned entities, and ghost them if they spawn in a player. (Default: 1) (Requires: apa_whitelist to be set to 1!)
+APA.Settings.EntitySpawnCheck = 1
 
 --------------------------
 APA.AddonLoaded = false -- Do not change this.
@@ -82,7 +84,9 @@ local AllowedHBigProps = {}
 ----------------------------------------------------------------------------------------------------------------------------------------------------*/
 
 local ClassFreezelist = {
-	"prop_physics"
+	"prop_physics",
+	"gmod_button",
+	"lawboard"
 }
 
 /*----------------------------------------------------------------------------------------------------------------------------------------------------
@@ -93,6 +97,7 @@ local ClassFreezelist = {
 
 local ClassBlacklist = {
 	"prop_physics",
+	"gmod_button",
 	"money",
 	"cheque",
 	"light",
@@ -155,6 +160,7 @@ APA.Settings.ForceFreeze = CreateConVar("apa_forcefreeze", APA.Settings.ForceFre
 APA.Settings.GhostFreeze = CreateConVar("apa_ghostfreeze", APA.Settings.GhostFreeze, {FCVAR_DEMO, FCVAR_GAMEDLL, FCVAR_SERVER_CAN_EXECUTE, FCVAR_NOTIFY}, "Set to 1 to automatically make props sleep and unghost set to 2 to freeze, and set to 0 to disable.")
 APA.Settings.AutoFreeze = CreateConVar("apa_autofreeze", APA.Settings.AutoFreeze, {FCVAR_DEMO, FCVAR_GAMEDLL, FCVAR_SERVER_CAN_EXECUTE, FCVAR_NOTIFY}, "Set to 1 to automatically freeze props over time, and set to 0 to disable. (Requires: Map restart.)")
 APA.Settings.AutoFreezeTime = CreateConVar("apa_autofreeze_time", APA.Settings.AutoFreezeTime, {FCVAR_DEMO, FCVAR_GAMEDLL, FCVAR_SERVER_CAN_EXECUTE, FCVAR_NOTIFY}, "How long to wait before freezing all props. (Default: 300) (Requires: apa_autofreeze to be set to 1!)")
+APA.Settings.EntitySpawnCheck = CreateConVar("apa_entspawncheck", APA.Settings.EntitySpawnCheck, {FCVAR_DEMO, FCVAR_GAMEDLL, FCVAR_SERVER_CAN_EXECUTE, FCVAR_NOTIFY}, "Check all spawned entities, and ghost them if they spawn in a player. (Default: 1) (Requires: apa_whitelist to be set to 1!)")
 
 --- DONE ---
 
@@ -182,6 +188,15 @@ hook.Add( "InitPostEntity", "_APAGetWorldEnts", function()
 		end
 	end )
 end )
+
+local hasFPP = false
+
+for i=1,3 do
+	timer.Simple(i+0.2, function()
+		hasFPP = (FPP && type(FPP) == "table" && FPP.Settings && type(FPP.Settings) == "table")
+	end)
+	if hasFPP then break end
+end -- Check 3 times.
 
 local function APAntiLoad()
 
@@ -213,6 +228,8 @@ local function APAntiLoad()
 		----------------
 		if moreinfo then
 			for k,v in next, moreinfo do if( type(v) != "string" ) then moreinfo[k] = nil end end
+		else
+			moreinfo = {}
 		end
 		----------------
 		net.Start("sAlertNotice")
@@ -220,7 +237,7 @@ local function APAntiLoad()
 			net.WriteFloat(ctype)
 			net.WriteFloat(time)
 			net.WriteFloat(alert)
-			if moreinfo then net.WriteTable(moreinfo) end
+			net.WriteTable(moreinfo)
 		net.Send(ply)
 	end
 
@@ -377,6 +394,7 @@ local function APAntiLoad()
 			for _,v in pairs(ClassBlacklist) do
 				if( string.find( string.lower(entClass), string.lower(v) ) ) then
 					badEntity = true
+					break -- No need to go through the rest of the loop.
 				end
 			end
 		end
@@ -385,6 +403,7 @@ local function APAntiLoad()
 			for _,v in pairs(ClassWhitelist) do
 				if( string.find( string.lower(entClass), string.lower(v) ) ) then
 					goodEntity = true
+					break
 				end
 			end
 		end
@@ -499,12 +518,16 @@ local function APAntiLoad()
 	---Ghosting-Stuff---
 
 	function APA.IsWorld( ent ) -- Intensive is world check.
-		local ec, iw, gw, ip, ipc, iv, ipr = ent:GetClass(), ent:IsWorld(), game.GetWorld(), ent:IsPlayer(), ent:IsNPC(), ent:IsVehicle(), ent:GetPersistent()
+		if not (ent and IsValid(ent)) then return true end
+		if ent.NoDeleting or ent.jailWall then return true end
 		
+		local ec, iw, gw, ip, ipc, iwp, iv, ipr = ent:GetClass(), ent:IsWorld(), game.GetWorld(), ent:IsPlayer(), ent:IsNPC(), ent:IsWeapon(), ent:IsVehicle(), ent:GetPersistent()
+
 		if ent == gw then return true end
 		if iw then return true end
 		if ip then return true end
 		if ipc then return true end
+		if iwp then return true end
 		if iv then return true end
 		if ipr then return true end
 		if ec == gw:GetClass() then return true end
@@ -512,7 +535,7 @@ local function APAntiLoad()
 		if ent:CreatedByMap() then return true end
 		if table.HasValue(APAWorldEnts, ent) then return true end
 
-		local blacklist = {"func_", "env_", "info_"}
+		local blacklist = {"func_", "env_", "info_", "predicted_", "chatindicator"}
 		ec = string.lower(ec)
 		for _,v in pairs(blacklist) do 
 			if string.find( ec, string.lower(v) ) then
@@ -547,7 +570,7 @@ local function APAntiLoad()
 
 	function APA.Ghost.Force( ent )
 	-- Used for ghosting a prop when it spawns in theory we could have FPPs anti-spam take care of this but this lets people build without their console getting spammed with "your prop has been ghosted".
-		if( ent:IsValid() and !ent:IsPlayer() and not APA.IsWorld( ent ) ) then
+		if( IsValid(ent) and !ent:IsPlayer() and not APA.IsWorld( ent ) ) then
 			ent.APGhost = true
 			
 			local oColGroup = ent:GetCollisionGroup()
@@ -571,7 +594,7 @@ local function APAntiLoad()
 			ent.APNoColided = true
 
 			local PhysObj = ent:GetPhysicsObject()
-			if( PhysObj ) then PhysObj:EnableMotion(false) end
+			if( IsValid(PhysObj) ) then PhysObj:EnableMotion(false) end
 		end
 	end
 
@@ -637,7 +660,7 @@ local function APAntiLoad()
 	function APA.Ghost.Off( picker, ent, spoof )
 		local canoff = APA.Ghost.CanOff( ent )
 		if not canoff then return false end
-		if( ent.APGhost and (ent:IsValid() and !ent:IsPlayer() and not APA.IsWorld( ent )) ) then
+		if( ent.APGhost and (IsValid(ent) and !ent:IsPlayer() and not APA.IsWorld( ent )) ) then
 			if( spoof or ( APA.CanPickup( picker, ent ) ) ) then
 				ent.APGhost = nil
 				ent:DrawShadow(true)
@@ -694,38 +717,34 @@ local function APAntiLoad()
 					ent.CollisionGroup = COLLISION_GROUP_WEAPON
 					ent.APNoColided = true
 				end
-			else	--------------------
-				if ent.APGhostOff or APA.Settings.AntiPush:GetInt() >= 1 then
-					if ent.APGhostOff then
-						local MotionEnabled, PhysObj = false, ent:GetPhysicsObject(); if( IsValid(PhysObj) ) then MotionEnabled = PhysObj:IsMotionEnabled() end
-						if APA.Settings.AntiPush:GetInt() >= 2 then
-							if (ent:GetVelocity():Distance( Vector( 0.1, 0.1, 0.1 ) ) > 0.2 and MotionEnabled) then
-								APA.Ghost.On( nil, ent, true )
-								ent.GhostFlickers = (ent.GhostFlickers or 0) + 1
-							end
-						end
-
-						local vel = ent:GetVelocity()
-						local velf = (vel.z > 0) && vel.z || (vel.z * -1)
-						local veld = vel:Distance( Vector( 0.1, 0.1, 0.1 ) )
-
-						if ( ( ( veld <= 0.2 ) or !MotionEnabled ) and ent.APGhost ~= nil ) then
-							tryGhostOff(ent,nil)
-						elseif (velf <= 0.1 or ((veld-velf) >= 0.3)) and APA.Settings.GhostFreeze:GetInt() >= 1 and ent.APGhost ~= nil then
-							local phys = ent:GetPhysicsObject()
-							if IsValid(phys) and not (ent:IsPlayer() or ent:IsNPC()) then
-								phys:SetVelocityInstantaneous(Vector(0,0,0))
-								phys:Sleep() 
-							end
-							if APA.Settings.GhostFreeze:GetInt() >= 2 and IsValid(phys) then
-								if phys:IsMotionEnabled() then phys:EnableMotion(false) end
-							end
-							if ( ( veld <= 0.2 ) or !MotionEnabled ) then
-								tryGhostOff(ent,phys) 
-							end
-							---- Sleepy Props Attempt.
-						end
+			elseif ent.APGhostOff and APA.Settings.AntiPush:GetInt() >= 1 then
+				local MotionEnabled, PhysObj = false, ent:GetPhysicsObject(); if( IsValid(PhysObj) ) then MotionEnabled = PhysObj:IsMotionEnabled() end
+				if APA.Settings.AntiPush:GetInt() >= 2 then
+					if (ent:GetVelocity():Distance( Vector( 0.1, 0.1, 0.1 ) ) > 0.2 and MotionEnabled) then
+						APA.Ghost.On( nil, ent, true )
+						ent.GhostFlickers = (ent.GhostFlickers or 0) + 1
 					end
+				end
+
+				local vel = ent:GetVelocity()
+				local velf = (vel.z > 0) && vel.z || (vel.z * -1)
+				local veld = vel:Distance( Vector( 0.1, 0.1, 0.1 ) )
+
+				if ( ( ( veld <= 0.2 ) or !MotionEnabled ) and ent.APGhost ~= nil ) then
+					tryGhostOff(ent,nil)
+				elseif (velf <= 0.1 or ((veld-velf) >= 0.3)) and APA.Settings.GhostFreeze:GetInt() >= 1 and ent.APGhost ~= nil then
+					local phys = ent:GetPhysicsObject()
+					if IsValid(phys) and not (ent:IsPlayer() or ent:IsNPC()) then
+						phys:SetVelocityInstantaneous(Vector(0,0,0))
+						phys:Sleep() 
+					end
+					if APA.Settings.GhostFreeze:GetInt() >= 2 and IsValid(phys) then
+						if phys:IsMotionEnabled() then phys:EnableMotion(false) end
+					end
+					if ( ( veld <= 0.2 ) or !MotionEnabled ) then
+						tryGhostOff(ent,phys) 
+					end
+					---- Sleepy Props Attempt.
 				end
 			end
 		end
@@ -754,9 +773,37 @@ local function APAntiLoad()
 		end
 	end)
 
+	--Check All Entity Spawns--
+	hook.Add("OnEntityCreated", "APA.EntitySpawnCheck", function( ent )
+		if( APA.Settings.EntitySpawnCheck:GetInt() >= 1 and APA.Settings.Whitelist:GetInt() >= 1 ) then -- The whitelist must be enabled for this due to known false positives.
+			timer.Simple(0.01, function()
+				if not (APA.IsWorld( ent )) then
+					local class = ent.GetClass and ent:GetClass() or ""
+					local _,g = APA.EntityCheck( class )
+					if not ( string.find(string.lower(class), "prop_") or string.find(string.lower(class), "npc_") or g ) then
+						local forceghost,_ = APA.EntityCheck( class )
+						if ( forceghost ) then
+							timer.Simple(0.0001, function()
+								if IsValid(ent) then
+									APA.Ghost.Force(ent)
+									ent.APGhost = true
+									APA.Ghost.Off(nil, ent, true)
+									ent.APGhostOff = true
+								end
+							end)
+						end
+					end
+				end
+			end)
+		end
+	end)
+
 	--Property-Setting-Fix--
-	hook.Add("CanProperty", "APA.CanPropertyFix", function( _, property, ent )
-		if( tostring(property) == "collision" and ent.APNoColided ) then return false end
+	hook.Add("CanProperty", "APA.CanPropertyFix", function( ply, property, ent )
+		if( tostring(property) == "collision" and ent.APNoColided ) then
+			APA.Notify(ply, "This prop is currently ghosted.", NOTIFY_ERROR, 10, tonumber(APA.Settings.FPP.Sounds:GetInt()))
+			return false 
+		end
 	end)
 
 	---Physgun-Stuff---
@@ -807,15 +854,53 @@ local function APAntiLoad()
 		end
 	end)
 
+	local function IsEmpty(ent)
+		local mins, maxs = ent:LocalToWorld(ent:OBBMins( )), ent:LocalToWorld(ent:OBBMaxs( ))
+		local tr = {}
+		tr.start = mins
+		tr.endpos = maxs
+		local ignore = player.GetAll()
+		table.insert(ignore, ent)
+		tr.filter = ignore
+		local trace = util.TraceLine(tr)
+		return trace.Entity
+	end
+
+	local function makeSpawnGhost(ent)
+		if IsValid(ent) then
+			local phys = ent:GetPhysicsObject()
+			if IsValid(phys) then
+				APA.Ghost.Force( ent )
+				ent.APGhostOff = false
+			end
+		end
+	end
+
+	--Prevent Stacking a prop in a prop:
+	hook.Add("StackerEntity", "_APA.AntiSpam.PropSafeStack", function(ent)
+		if IsValid(ent) then
+			if hasFPP then
+				if tobool(FPP.Settings.FPP_ANTISPAM1.antispawninprop) then
+					local PropInProp = IsEmpty(ent)
+					if IsValid(PropInProp) then
+						timer.Simple(0.001, function()
+							if IsValid(ent) then
+								APA.Ghost.Force( ent )
+								ent.APGhostOff = false
+								ent:SetCollisionGroup( COLLISION_GROUP_WORLD or 20 )
+							end
+						end)
+					end
+				end
+			end
+		end
+	end)
 
 	--Ghost Props On Spawn:
 	hook.Add("PlayerSpawnedProp", "_APA.AntiSpam.PropSafeSpawn", function(_, _, ent)
 		if IsValid(ent) and APA.Settings.GhostOnSpawn:GetInt() >= 1 then
-			local phys = ent:GetPhysicsObject()
-			if phys:IsValid() then
-				APA.Ghost.Force( ent )
-				ent.APGhostOff = false
-			end
+			makeSpawnGhost(ent)
+			timer.Simple(0.001, function() makeSpawnGhost(ent) end)
 		end
 	end)
 
@@ -877,7 +962,7 @@ local function APAntiLoad()
 	end)
 
 	local function isBlocked(model)
-		if FPP && type(FPP) == "table" && FPP.Settings && type(FPP.Settings) == "table" then
+		if hasFPP then
 			local found = FPP.BlockedModels[model]
 			if tobool(FPP.Settings.FPP_BLOCKMODELSETTINGS1.iswhitelist) and not found then
 				-- Prop is not in the white list
