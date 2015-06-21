@@ -1,7 +1,8 @@
 -- USelect
+AddCSLuaFile( "ulx_selector.lua" )
+AddCSLuaFile("autorun/ulx_selector.lua")
+------------
 if SERVER then
-	AddCSLuaFile( "ulx_selector.lua" )
-	AddCSLuaFile("autorun/ulx_selector.lua")
 	util.AddNetworkString("ulx_selector")
 
 	--[[
@@ -62,6 +63,7 @@ if CLIENT then
 								local min,max = trg:WorldSpaceAABB()
 								v = LerpVector(0.5, min, max)
 							end
+							if( not v ) then return end;
 							v = v:ToScreen(); v = Vector(v.x, v.y)
 							pv, ov = Vector(p.x, p.y), Vector(gui.MouseX(), gui.MouseY())
 							if pv:Length2D() < ov:Length2D() then

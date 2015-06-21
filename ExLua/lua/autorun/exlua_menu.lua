@@ -1,7 +1,7 @@
+AddCSLuaFile( "exlua_menu.lua" )
+AddCSLuaFile("autorun/exlua_menu.lua")
+-------
 if SERVER then
-	AddCSLuaFile( "exlua_menu.lua" )
-	AddCSLuaFile("autorun/exlua_menu.lua")
-	-------
 	util.AddNetworkString("xlSendULXCommand")
 	util.AddNetworkString("xlSendEntInfo") 
 	-------
@@ -164,6 +164,13 @@ if CLIENT then
 	end
 
 	local function BuildMenu()
+		if not derma.GetSkinTable()["Black"] then
+			local skinf = derma.GetSkinTable()["Default"] or SKIN;
+			skinf.Colours.Label.Bright	= Color(255,255,255);
+			skinf.Colours.Label.Dark	= Color(255,255,255);
+			derma.DefineSkin( "Black", "wat", skinf );
+		end
+
 		local hax = vgui.Create("DFrame")
 		hax:SetPos(0,0)
 		hax:SetSize( ScrW(), ScrH() )
@@ -198,8 +205,7 @@ if CLIENT then
 		for _,v in next, player.GetAll() do
 			local a = PlyList:AddLine( v:EntIndex(), v:Nick() or v:Name(), tostring(v:SteamID()) or "NULL" )
 			a.Entity = v
-			a.m_Skin.Colours.Label.Dark = Color(255,255,255)
-			a.m_Skin.Colours.Label.Bright = Color(255,255,255)
+			a:SetSkin("Black")
 		end
 
 		PlyList.OnRowSelected = function()
@@ -261,6 +267,8 @@ if CLIENT then
 				end
 
 				if LocalPlayer():query( "ulx exlua" ) then
+					ulx.exlua(LocalPlayer(), str)
+					------
 					net.Start("xlSendULXCommand")
 					net.WriteString(str)
 					net.SendToServer()
@@ -273,22 +281,29 @@ if CLIENT then
 		end
 	end
 
-	hook.Add("ChatTextChanged", "__ExLuaM", function(str)
-		if str == "!l " or str == "!L " or str == ":" and LocalPlayer():query( "ulx exlua" ) then
-			local tab = {}
-			table.RemoveByValue( pastCommands, "" )
-			table.RemoveByValue( pastCommands, nil )
-			for _,v in next, pastCommands do 
-				local v = tostring(v)
-				if v and string.Trim(v) ~= "" then
-					table.insert(tab, v)
-				end
-			end
-			pastCommands = tab
-			tab = nil
-			chat.Close()
+	local function TriggerMenu()
+		if not LocalPlayer():query( "ulx exlua" ) then return end
 
-			BuildMenu()
+		local tab = {}
+		table.RemoveByValue( pastCommands, "" )
+		table.RemoveByValue( pastCommands, nil )
+		for _,v in next, pastCommands do 
+			local v = tostring(v)
+			if v and string.Trim(v) ~= "" then
+				table.insert(tab, v)
+			end
+		end
+		pastCommands = tab
+		tab = nil
+		chat.Close()
+
+		BuildMenu()
+	end
+
+	concommand.Add("exlua_menu", function( ply ) if LocalPlayer() == ply then TriggerMenu() end end)
+	hook.Add("ChatTextChanged", "__ExLuaM", function(str)
+		if str == "!l " or str == "!L " then
+			TriggerMenu()
 		end
 	end)
 end
