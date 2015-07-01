@@ -1,0 +1,11 @@
+"AddonInfo"
+{
+	"name"				"CDP"
+	"version"			"0.01"
+	"up_date"			"00/00/00"
+	"author_name"		"LuaTenshi"
+	"author_email"		"luatenshi@gmail.com"
+	"author_url"		"http://steamcommunity.com/profiles/76561198096713277"
+	"info"				"Custom Decal Placement"
+	"override"			"0"
+}
