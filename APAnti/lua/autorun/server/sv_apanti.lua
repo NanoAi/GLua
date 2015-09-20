@@ -309,6 +309,7 @@ local function APAntiLoad()
 
 		local an,as,tn,ts = tostring(t.aname), tostring(t.asteam), tostring(t.tname), tostring(t.tsteam)
 
+		util.AddNetworkString( "sNotifyHit" )
 		net.Start("sNotifyHit")
 			net.WriteString(an)
 			net.WriteString(as)
