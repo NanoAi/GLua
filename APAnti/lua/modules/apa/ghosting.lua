@@ -131,7 +131,7 @@ function APA.InitGhost( ent, ghostoff, nofreeze, collision )
 end
 
 hook.Add( "PhysgunPickup", "APAntiPickup", function(ply,ent)
-	if has.AntiPush:GetBool() then
+	if has.AntiPush:GetBool() and ent:CPPICanPhysgun(ply) then
 		local puid = tostring(ply:UniqueID())
 		for _,v in next, constraint.GetAllConstrainedEntities(ent) do APA.InitGhost(v, false, true) end
 
@@ -141,7 +141,7 @@ hook.Add( "PhysgunPickup", "APAntiPickup", function(ply,ent)
 end)
 
 hook.Add( "PhysgunDrop", "APAntiDrop", function(ply,ent)
-	if IsValid(ent) and ent.__APAPhysgunHeld then
+	if (IsValid(ent) and ent.__APAPhysgunHeld) and ent:CPPICanPhysgun(ply) then
 		local puid = tostring(ply:UniqueID())
 		timer.Simple(1.1, function()
 			if IsValid(ent) and ent.__APAPhysgunHeld then
