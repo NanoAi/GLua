@@ -1,20 +1,19 @@
 local APAWorldEnts = APAWorldEnts or {}
 local hook, table = hook, table
-local has = APA.Settings
 
 if #APAWorldEnts <= 0 then timer.Simple(0, function() for _,v in next, ents.GetAll() do table.insert( APAWorldEnts, v ) end end) end
 
 function APA.EntityCheck( entClass )
 	local good, bad = false, false
 
-	for _,v in pairs(has.L.Black) do
+	for _,v in pairs(APA.Settings.L.Black) do
 		if( string.find( string.lower(entClass), string.lower(v) ) ) then
 			bad = true
 			break -- No need to go through the rest of the loop.
 		end
 	end
 
-	for _,v in pairs(has.L.White) do
+	for _,v in pairs(APA.Settings.L.White) do
 		if( string.find( string.lower(entClass), string.lower(v) ) ) then
 			good = true
 			break
@@ -38,18 +37,18 @@ local function DamageFilter( target, d ) -- d for damage info.
 		local isvehicle = (attacker:IsVehicle() or inflictor:IsVehicle())
 		local isexplosion = d:IsExplosionDamage()
 
-		if has.UnbreakableProps:GetBool() then
+		if APA.Settings.UnbreakableProps:GetBool() then
 			local x = IsValid(target) and target.GetClass and target:GetClass() or nil
 			if x == "prop_physics" then return true end
 		end
 
-		if ( table.HasValue(has.L.Damage, type) or bad ) and not good then
-			if has.BlockVehicleDamage:GetBool() and isvehicle then return true end
-			if has.BlockExplosionDamage:GetBool() and isexplosion then return true end
-			if has.AntiPK:GetBool() and not isvehicle and not isexplosion then 
+		if ( table.HasValue(APA.Settings.L.Damage, type) or bad ) and not good then
+			if APA.Settings.BlockVehicleDamage:GetBool() and isvehicle then return true end
+			if APA.Settings.BlockExplosionDamage:GetBool() and isexplosion then return true end
+			if APA.Settings.AntiPK:GetBool() and not isvehicle and not isexplosion then 
 				d:SetDamage(0) d:ScaleDamage(0) d:SetDamageForce(Vector(0,0,0))
 
-				if has.FreezeOnHit:GetBool() then
+				if APA.Settings.FreezeOnHit:GetBool() then
 					if damage >= 15 then
 						if not v:IsPlayer() then
 							local phys = IsValid(v) and v:GetPhysicsObject()
@@ -67,7 +66,7 @@ end
 hook.Add( "EntityTakeDamage", "APAntiPk", DamageFilter )
 
 hook.Add( "PlayerSpawnedProp", "APAntiExplode", function( _, _, prop )
-	if( IsValid(prop) and has.BlockExplosionDamage:GetInt() >= 1 ) then
+	if( IsValid(prop) and APA.Settings.BlockExplosionDamage:GetInt() >= 1 ) then
 		if not string.find( string.lower(prop:GetClass()), "wire" ) then -- Wiremod causes problems.
 			prop:SetKeyValue("ExplodeDamage", "0") 
 			prop:SetKeyValue("ExplodeRadius", "0")
@@ -118,9 +117,9 @@ local function SpawnFilter(ply, model)
 		local model = model and APA.ModelNameFix( model )
 
 		if IsValid(ent) then
-			if has.M.Ghosting then ent.__APAPhysgunHeld = {} end
-			if has.NoCollideVehicles:GetBool() and ent:IsVehicle() then ent:SetCollisionGroup(COLLISION_GROUP_WEAPON) return end
-			if has.M.Ghosting and has.GhostSpawn:GetBool() and APA.FindOwner( ent ) then APA.InitGhost(ent, false, false, true) return end
+			if APA.Settings.M.Ghosting then ent.__APAPhysgunHeld = {} end
+			if APA.Settings.NoCollideVehicles:GetBool() and ent:IsVehicle() then ent:SetCollisionGroup(COLLISION_GROUP_WEAPON) return end
+			if APA.Settings.M.Ghosting and APA.Settings.GhostSpawn:GetBool() and APA.FindOwner( ent ) then APA.InitGhost(ent, false, false, true, true) return end
 		end
 	end)
 end
@@ -132,15 +131,45 @@ hook.Add( "AllowPlayerPickup", "APAntiPickup", function(ply,ent)
 	if bad or not good then return false end
 end)
 
+hook.Add( "PhysgunDrop", "APANoThrow", function(ply,ent)
+	if APA.Settings.NoThrow:GetBool() and IsValid(ent) then
+		for _,v in next, constraint.GetAllConstrainedEntities(ent) do
+			if IsValid(v) then
+				local phys = v.GetPhysicsObject and v:GetPhysicsObject() or nil
+				if IsValid(phys) then 
+					phys:SetVelocityInstantaneous(Vector(0,0,0))
+					phys:AddAngleVelocity(phys:GetAngleVelocity()*-1)
+				end
+			end
+		end
+	end
+	if APA.Settings.FreezeOnDrop:GetBool() and IsValid(ent) and v.GetClass and table.HasValue(APA.Settings.L.Freeze, string.lower(v:GetClass())) then
+		local phys = ent.GetPhysicsObject and ent:GetPhysicsObject() or nil 
+		if IsValid(phys) then phys:EnableMotion(false) end
+	end
+end)
+
+hook.Add( "OnPhysgunReload", "APAMassUnfreeze", function(ply)
+	if APA.Settings.StopMassUnfreeze:GetBool() then
+		if ply.__APAunfreezetimeout and ply.__APAunfreezetimeout > CurTime() then
+			ply.__APAunfreezetimeout = nil
+			return false 
+		end
+		ply.__APAunfreezetimeout = CurTime()+0.3
+	else
+		ply.__APAunfreezetimeout = nil
+	end
+end)
+
 timer.Create("APAFreezePassive", 120, 0, function()
-	if not has.FreezePassive:GetBool() then return end
-	for _,v in next, table.Add(ents.FindByClass("prop_*"),ents.FindByClass("gmod_*")) do
-		if IsValid(v) then
+	if not APA.Settings.FreezePassive:GetBool() then return end
+	for _,v in next, ents.GetAll() do
+		if IsValid(v) and v.GetClass and table.HasValue(APA.Settings.L.Freeze, string.lower(v:GetClass())) then
 			for _,v in next, constraint.GetAllConstrainedEntities(v) do
 				local v = v:GetPhysicsObject()
 				if IsValid(v) then v:EnableMotion(false) end
 				for _,v in next, player.GetAll() do
-					if IsValid(v) then APA.Notify(v, "Entities have been frozen.", 4, 3.5, 0) end
+					if IsValid(v) then v:ChatPrint('[APAnti] Entities have been frozen.') end
 				end
 			end
 		end

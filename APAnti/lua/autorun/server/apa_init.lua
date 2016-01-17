@@ -7,9 +7,14 @@ APA.Settings = {
 	PhysgunNerf 			= {1, "Setting this to 1 will limit the physgun speed."},
 	BlockVehicleDamage 		= {1, "Setting this to 1 will stop vehicle damage."},
 	BlockExplosionDamage 	= {1, "Setting this to 1 will block explosion damage."},
+	--- Prop Control ---
 	UnbreakableProps 		= {0, "Setting this to 1 will make props unbreakable. (Disabled by default.)"},
 	NoCollideVehicles 		= {1, "Setting this to 1 will make vehicles not collide with players."},
+	NoThrow					= {1, "Setting this to 1 will stop people from throwing props."},
+	--- Freezing ---
+	StopMassUnfreeze		= {1, "Setting this to 1 will stop people from unfreezing all their props by double tapping R."},
 	FreezeOnHit 			= {1, "Setting this to 1 will freeze props when they hit a player. (Needs AntiPK.)"},
+	FreezeOnDrop 			= {0, "Setting this to 1 will freezes props when a player lets go of them. (Disabled by default.)"},
 	FreezePassive			= {0, "Setting this to 1 will freeze props passivly. (Disabled by default.)"},
 	--- Ghosting ---
 	AntiPush 				= {1, "Setting this to 1 will enable Anti Prop Push (Ghosting)."},
@@ -21,7 +26,7 @@ APA.Settings = {
 
 APA.Settings.L = {
 	Freeze = {"prop_physics", "gmod_button", "lawboard"}, -- Freeze list not yet implamented.
-	Black  = {"prop_physics", "gmod_button", "money", "cheque", "light", "lamp", "playx", "lawboard", "fadmin", "jail", "prop", "wire"},
+	Black  = {"prop_physics", "gmod_", "money", "cheque", "light", "lamp", "playx", "lawboard", "fadmin", "jail", "prop", "wire"},
 	White  = {"knife", "prop_combine_ball", "npc_tripmine", "npc_satchel"},
 	Damage = { DMG_CRUSH, DMG_SLASH, DMG_CLUB, DMG_DIRECT, DMG_PHYSGUN, DMG_VEHICLE }
 }
@@ -35,6 +40,7 @@ local function plugin(a)
 	include('modules/apa/'..a..'.lua')
 end
 
+APA.Settings.M = APA.Settings.M or {}
 for k,v in next, APA.Settings do -- Build Cvars.
 	if k ~= 'L' and k ~= 'M' then
 		APA.Settings[k] = CreateConVar(string.lower("apa_"..tostring(k)), v[1], {FCVAR_DEMO, FCVAR_GAMEDLL, FCVAR_SERVER_CAN_EXECUTE, FCVAR_NOTIFY}, v[2])
@@ -91,7 +97,7 @@ hook.Add("PostGamemodeLoaded", "APAntiLOAD", function()
 	timer.Simple(0, function()
 		if APA.Settings.PhysgunNerf:GetBool() then
 			APA.physgun_maxSpeed = APA.physgun_maxSpeed or GetConVar("physgun_maxSpeed"):GetInt() 
-			RunConsoleCommand("physgun_maxSpeed", "975") 
+			RunConsoleCommand("physgun_maxSpeed", "950") 
 		end
 
 		MsgN('\n-------------------------')
@@ -116,8 +122,8 @@ util.AddNetworkString("APAnti AlertNotice")
 function APA.Notify(ply, str, ctype, time, alert, moreinfo)
 	if alert >= 1 or tobool(alert) then alert = 1 end
 
-	if not ply then return end
-	if not ply:IsPlayer() then return end
+	if not IsValid(ply) then return end
+	if not (ply.IsPlayer and ply:IsPlayer()) then return end
 	if not str then return end
 	if not ctype then ctype = 1 end
 

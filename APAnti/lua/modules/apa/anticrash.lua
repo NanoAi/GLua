@@ -1,12 +1,10 @@
 -- A Fork of https://github.com/Kefta/Entity-Crash-Catcher Most of the code left untouched. -- Friday, January 15, 2016 --
 
-local apahas = APA.Settings
 local has = AntiCrashCMDTable
-
 local inworld = util.IsInWorld
 
 hook.Add("OnEntityCreated", "APAAntiCrash", function(ent)
-	if apahas.AntiCrash:GetBool() then
+	if APA.Settings.AntiCrash:GetBool() then
 		timer.Simple(0, function()
 			if not IsValid(ent) then if ent.Remove then ent:Remove() end return end
 			if ent.IsPlayer and ent:IsPlayer() then return end
@@ -77,7 +75,7 @@ if ( has.VelocityHook:GetBool() or has.UnreasonableHook:GetBool() ) then
 	
 	hook.Add( "Think", "physics.Unreasonable", function()
 		if ( NextThink > CurTime() ) then return end
-		if not apahas.AntiCrash:GetBool() then return end
+		if not APA.Settings.AntiCrash:GetBool() then return end
 		
 		NextThink = CurTime() + has.ThinkDelay:GetFloat()
 		
