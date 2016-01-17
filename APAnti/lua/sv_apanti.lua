@@ -168,10 +168,10 @@ timer.Create("APAFreezePassive", 120, 0, function()
 			for _,v in next, constraint.GetAllConstrainedEntities(v) do
 				local v = v:GetPhysicsObject()
 				if IsValid(v) then v:EnableMotion(false) end
-				for _,v in next, player.GetAll() do
-					if IsValid(v) then v:ChatPrint('[APAnti] Entities have been frozen.') end
-				end
 			end
 		end
+	end
+	for _,v in next, player.GetAll() do
+		if IsValid(v) then v:ChatPrint('[APAnti] Entities have been frozen.') end
 	end
 end)
