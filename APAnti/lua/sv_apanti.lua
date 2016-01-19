@@ -119,7 +119,6 @@ local function SpawnFilter(ply, model)
 		if IsValid(ent) then
 			if APA.Settings.M.Ghosting then ent.__APAPhysgunHeld = {} end
 			if APA.Settings.NoCollideVehicles:GetBool() and ent:IsVehicle() then ent:SetCollisionGroup(COLLISION_GROUP_WEAPON) return end
-			if APA.Settings.M.Ghosting and APA.Settings.GhostSpawn:GetBool() and APA.FindOwner( ent ) then APA.InitGhost(ent, false, false, true, true) return end
 		end
 	end)
 end

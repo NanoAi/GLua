@@ -145,7 +145,8 @@ end)
 hook.Add( "PhysgunDrop", "APAntiDrop", function(ply,ent)
 	if (IsValid(ent) and ent.__APAPhysgunHeld) and IsSafeToGhost(ply,ent) then
 		local puid = tostring(ply:UniqueID())
-		timer.Simple(1.1, function()
+		local freezing = ent.GetPhysicsObject and ent:GetPhysicsObject() and !ent:GetPhysicsObject():IsMotionEnabled()
+		timer.Simple(freezing and 0.3 or 1.1, function()
 			if IsValid(ent) and ent.__APAPhysgunHeld then
 				if table.Count(ent.__APAPhysgunHeld) <= 0 then
 					for _,v in next, constraint.GetAllConstrainedEntities(ent) do 
@@ -158,13 +159,16 @@ hook.Add( "PhysgunDrop", "APAntiDrop", function(ply,ent)
 	end
 end)
 
+local function DontPickupGhosts(ply,ent) if ent.APGhost then return false end end
+hook.Add("GravGunPickupAllowed","APADontPickupGhosts", DontPickupGhosts)
+hook.Add("AllowPlayerPickup","APADontPickupGhosts", DontPickupGhosts)
+
 timer.Create("APAUnGhostPassive", 6.5, 0, function()
 	if not APA.Settings.UnGhostPassive:GetBool() then return end
 	for _,v in next, ents.GetAll() do
-		local _, bad, _ = APA.EntityCheck(v)
-		if IsValid(v) and bad then
+		if IsValid(v) and v.APGhost then
 			for _,v in next, constraint.GetAllConstrainedEntities(v) do
-				if table.Count(v.__APAPhysgunHeld or {}) == 0 then
+				if table.Count(v.__APAPhysgunHeld or {}) == 0 and v.APGhost then
 					APA.InitGhost(v, true, false)
 				end
 			end
@@ -172,8 +176,13 @@ timer.Create("APAUnGhostPassive", 6.5, 0, function()
 	end
 end)
 
-local function DontPickupGhosts(ply,ent) if ent.APGhost then return false end end
-hook.Add("GravGunPickupAllowed","APADontPickupGhosts", DontPickupGhosts)
-hook.Add("AllowPlayerPickup","APADontPickupGhosts", DontPickupGhosts)
+hook.Add( "OnEntityCreated", "APAntiGhostSpawn", function(ent)
+	timer.Simple(0, function()
+		local ply = APA.FindOwner(ent)
+		if APA.Settings.GhostSpawn:GetBool() and ply and IsSafeToGhost(ply,ent) then
+			APA.InitGhost(ent, false, false, true, true)
+		end
+	end)
+end)
 
 APA.initPlugin('ghosting') -- Init Plugin (Must match filename.)

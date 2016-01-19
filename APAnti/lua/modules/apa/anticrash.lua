@@ -6,7 +6,7 @@ local inworld = util.IsInWorld
 hook.Add("OnEntityCreated", "APAAntiCrash", function(ent)
 	if APA.Settings.AntiCrash:GetBool() then
 		timer.Simple(0, function()
-			if not IsValid(ent) then if ent.Remove then ent:Remove() end return end
+			if not IsValid(ent) then return end
 			if ent.IsPlayer and ent:IsPlayer() then return end
 
 			local pos = ent.GetPos and ent:GetPos()
