@@ -74,11 +74,3 @@ net.Receive("APAnti AlertNotice", function()
 		surface.PlaySound("ambient/alarms/klaxon1.wav")
 	end
 end)
-
-hook.Add("InitPostEntity", "APAntiUpdateNotice", function()
-	timer.Simple(5.2, function()
-		chat.AddText(Color(255,170,0), "\n[APAnti] ", Color(255,255,255), "APAnti has updated make sure to update your server settings!")
-		chat.AddText(Color(255,170,0), "[APAnti] ", Color(255,255,255), "The console variables can be found here... https://goo.gl/ZsXV0W\n")
-	end)
-	hook.Remove("InitPostEntity", "APAntiUpdateNotice")
-end)
