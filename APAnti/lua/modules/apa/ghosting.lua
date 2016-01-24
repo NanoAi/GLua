@@ -63,7 +63,8 @@ function APA.InitGhost( ent, ghostoff, nofreeze, collision, forcefreeze )
 	if( IsValid(ent) and not APA.IsWorld( ent ) ) then
 		local collision = collision and COLLISION_GROUP_WORLD or COLLISION_GROUP_WEAPON
 		local unghost = ghostoff and APA.CheckGhost(ent) or false
-		local ghostspawn, antipush = APA.Settings.GhostSpawn:GetBool(), APA.Settings.AntiPush:GetBool()
+
+		local ghostspawn, antipush, ghostfreeze = APA.Settings.GhostSpawn:GetBool(), APA.Settings.AntiPush:GetBool(), APA.Settings.GhostFreeze:GetBool()
 
 		ent.APGhost = APA.Settings.AntiPush:GetBool() or nil
 		ent:DrawShadow(unghost)
@@ -117,8 +118,8 @@ function APA.InitGhost( ent, ghostoff, nofreeze, collision, forcefreeze )
 			for i = 0, ent:GetPhysicsObjectCount() - 1 do
 				local subphys = ent:GetPhysicsObjectNum( i )
 				if ( IsValid( subphys ) ) then
-					local canfreeze = unghost and subphys:IsMotionEnabled()
-					if (canfreeze and not nofreeze and not ent.APGhost) or forcefreeze then subphys:EnableMotion(false) end
+					local canfreeze = (not unghost or ghostfreeze) and subphys:IsMotionEnabled()
+					if (canfreeze and not nofreeze) or forcefreeze then subphys:EnableMotion(false) end
 					subphys:SetVelocity( Vector(0,0,0) )
 					subphys:AddAngleVelocity( subphys:GetAngleVelocity() * -1 )
 					subphys:Sleep()

@@ -19,6 +19,7 @@ APA.Settings = {
 	--- Ghosting ---
 	AntiPush 				= {1, "Setting this to 1 will enable Anti Prop Push (Ghosting)."},
 	GhostSpawn				= {1, "Setting this to 1 will enable ghosting on spawn."},
+	GhostFreeze				= {1, "Setting this to 1 will freeze ghosts."},
 	UnGhostPassive			= {0, "Setting this to 1 will passivly unghost props. (Disabled by default.) (Needs AntiPush.)"},
 	--- AntiCrash ---
 	AntiCrash				= {0, "Setting this to 1 will enable the AntiCrash. (Disabled by default.) (Experimental.)"}
