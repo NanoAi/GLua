@@ -42,6 +42,9 @@ local function DamageFilter( target, d ) -- d for damage info.
 			if x == "prop_physics" then return true end
 		end
 
+		local ent = APA.FindProp(attacker, inflictor)
+		if IsValid(ent) and ent.IsWeapon and ent:IsWeapon() then return end
+
 		if ( table.HasValue(APA.Settings.L.Damage, type) or bad ) and not good then
 			if APA.Settings.BlockVehicleDamage:GetBool() and isvehicle then return true end
 			if APA.Settings.BlockExplosionDamage:GetBool() and isexplosion then return true end
@@ -52,7 +55,7 @@ local function DamageFilter( target, d ) -- d for damage info.
 					if damage >= 15 then
 						if not v:IsPlayer() then
 							local phys = IsValid(v) and v:GetPhysicsObject()
-							if phys then phys:EnableMotion(false) end
+							if IsValid(phys) then phys:EnableMotion(false) end
 						end
 						if target:IsPlayer() then target:SetVelocity(target:GetVelocity()*-1) end
 					end
