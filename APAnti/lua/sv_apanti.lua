@@ -145,7 +145,7 @@ hook.Add( "PhysgunDrop", "APANoThrow", function(ply,ent)
 			end
 		end
 	end
-	if APA.Settings.FreezeOnDrop:GetBool() and IsValid(ent) and v.GetClass and table.HasValue(APA.Settings.L.Freeze, string.lower(v:GetClass())) then
+	if APA.Settings.FreezeOnDrop:GetBool() and IsValid(ent) and ent.GetClass and table.HasValue(APA.Settings.L.Freeze, string.lower(ent:GetClass())) then
 		local phys = ent.GetPhysicsObject and ent:GetPhysicsObject() or nil 
 		if IsValid(phys) then phys:EnableMotion(false) end
 	end
