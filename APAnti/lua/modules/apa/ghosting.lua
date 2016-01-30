@@ -48,7 +48,7 @@ end
 function APA.CheckGhost( ent )
 	local owner = APA.FindOwner(ent)
 	if ent.GetVelocity and ent:GetVelocity():Distance( Vector( 0.01, 0.01, 0.01 ) ) > 0.15 then 
-		if APA.Settings.AntiPush:GetBool() and not APA.Settings.UnGhostPassive:GetBool() then APA.Notify(owner, "Cannot UnGhost: Prop still moving!", NOTIFY_ERROR, 0.5, 0) end
+		if APA.Settings.AntiPush:GetBool() and not APA.Settings.UnGhostPassive:GetBool() then APA.Notify(owner, "Cannot UnGhost: Prop still moving!", NOTIFY_ERROR, 0.7, 0) end
 		return false 
 	end
 	local trap = IsTrap(ent)
@@ -146,7 +146,7 @@ end)
 hook.Add( "PhysgunDrop", "APAntiDrop", function(ply,ent)
 	if (IsValid(ent) and ent.__APAPhysgunHeld) and IsSafeToGhost(ply,ent) then
 		local puid = tostring(ply:UniqueID())
-		local freezing = (ent.GetPhysicsObject and ent:GetPhysicsObject() and !ent:GetPhysicsObject():IsMotionEnabled()) or APA.Settings.FreezeOnDrop:GetBool()
+		local freezing = (ent.GetPhysicsObject and IsValid(ent:GetPhysicsObject()) and !ent:GetPhysicsObject():IsMotionEnabled()) or APA.Settings.FreezeOnDrop:GetBool()
 		timer.Simple(freezing and 0 or 1, function()
 			if IsValid(ent) and ent.__APAPhysgunHeld then
 				if table.Count(ent.__APAPhysgunHeld) <= 0 then
