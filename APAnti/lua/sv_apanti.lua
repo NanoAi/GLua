@@ -40,8 +40,8 @@ local function DamageFilter( target, d ) -- d for damage info.
 	local attacker, inflictor, damage, type = d:GetAttacker(), d:GetInflictor(), d:GetDamage(), d:GetDamageType()
 	local dents = {attacker, inflictor}
 
-	for _,v in next, dents do 
-		local good, bad, ugly = APA.EntityCheck( v:GetClass() )
+	for _,v in next, dents do
+		local good, bad, ugly = APA.EntityCheck( (v and v.GetClass) and v:GetClass() or '' )
 		local isvehicle = (attacker:IsVehicle() or inflictor:IsVehicle())
 		local isexplosion = d:IsExplosionDamage()
 
