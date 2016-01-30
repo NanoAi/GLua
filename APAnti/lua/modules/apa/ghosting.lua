@@ -131,7 +131,10 @@ function APA.InitGhost( ent, ghostoff, nofreeze, collision, forcefreeze )
 	end
 end
 
-local function IsSafeToGhost(ply,ent) return (IsValid(ply) and IsValid(ent)) and ent.CPPICanPhysgun and ent:CPPICanPhysgun(ply) and not (ent:IsVehicle() or ent:IsWeapon() or APA.IsWorld(ent)) end
+local function IsSafeToGhost(ply,ent) 
+	return (IsValid(ply) and IsValid(ent)) and ent.CPPICanPhysgun and ent:CPPICanPhysgun(ply) and 
+	not (ent:IsVehicle() or ent:IsWeapon() or APA.IsWorld(ent)) and not (ent.GetClass and ent:GetClass() == "prop_ragdoll")
+end
 
 hook.Add( "PhysgunPickup", "APAntiPickup", function(ply,ent)
 	if APA.Settings.AntiPush:GetBool() and IsSafeToGhost(ply,ent) then
