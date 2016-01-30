@@ -25,7 +25,15 @@ end
 
 function APA.FindProp(attacker, inflictor)
 	if( attacker:IsPlayer() ) then attacker = inflictor end
-	return IsValid(attacker) and attacker.GetClass and attacker
+	return ( IsValid(attacker) and attacker.GetClass ) and attacker or nil
+end
+
+function APA.WeaponCheck(attacker, inflictor)
+	local ent = APA.FindProp(attacker, inflictor)
+	if ent and IsValid(ent) and ((ent.IsPlayer and ent:IsPlayer()) or (ent.IsWeapon and ent:IsWeapon())) then 
+		return true
+	end
+	return false
 end
 
 local function DamageFilter( target, d ) -- d for damage info.
@@ -42,8 +50,7 @@ local function DamageFilter( target, d ) -- d for damage info.
 			if x == "prop_physics" then return true end
 		end
 
-		local ent = APA.FindProp(attacker, inflictor)
-		if IsValid(ent) and ent.IsWeapon and ent:IsWeapon() then return end
+		if APA.WeaponCheck(attacker, inflictor) then return end
 
 		if ( table.HasValue(APA.Settings.L.Damage, type) or bad ) and not good then
 			if APA.Settings.BlockVehicleDamage:GetBool() and isvehicle then return true end
@@ -151,18 +158,6 @@ hook.Add( "PhysgunDrop", "APANoThrow", function(ply,ent)
 	end
 end)
 
-hook.Add( "OnPhysgunReload", "APAMassUnfreeze", function(ply)
-	if APA.Settings.StopMassUnfreeze:GetBool() then
-		if ply.__APAunfreezetimeout and ply.__APAunfreezetimeout > CurTime() then
-			ply.__APAunfreezetimeout = nil
-			return false 
-		end
-		ply.__APAunfreezetimeout = CurTime()+0.3
-	else
-		ply.__APAunfreezetimeout = nil
-	end
-end)
-
 timer.Create("APAFreezePassive", 120, 0, function()
 	if not APA.Settings.FreezePassive:GetBool() then return end
 	for _,v in next, ents.GetAll() do
@@ -175,5 +170,20 @@ timer.Create("APAFreezePassive", 120, 0, function()
 	end
 	for _,v in next, player.GetAll() do
 		if IsValid(v) then v:ChatPrint('[APAnti] Entities have been frozen.') end
+	end
+end)
+
+hook.Add( "OnPhysgunReload", "APAMassUnfreeze", function(gun,ply)
+	if APA.Settings.StopMassUnfreeze:GetBool() then
+		local returnfalse = false
+		if gun.APAunfreezetimeout and gun.APAunfreezetimeout > CurTime() then returnfalse = true end
+		gun.APAunfreezetimeout = CurTime()+0.3
+		if returnfalse then return false end
+	else
+		gun.APAunfreezetimeout = nil
+	end
+	if APA.Settings.StopRUnfreeze:GetBool() then
+		APA.Notify(ply, "Cannot Unfreeze Using Reload!", NOTIFY_ERROR, 1, 0)
+		return false 
 	end
 end)

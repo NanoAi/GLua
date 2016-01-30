@@ -162,6 +162,7 @@ end)
 
 local function DontPickupGhosts(ply,ent) if ent.APGhost then return false end end
 hook.Add("GravGunPickupAllowed","APADontPickupGhosts", DontPickupGhosts)
+hook.Add("CanPlayerUnfreeze","APADontPickupGhosts", DontPickupGhosts)
 hook.Add("AllowPlayerPickup","APADontPickupGhosts", DontPickupGhosts)
 
 timer.Create("APAUnGhostPassive", 6.5, 0, function()
@@ -180,7 +181,7 @@ end)
 hook.Add( "OnEntityCreated", "APAntiGhostSpawn", function(ent)
 	timer.Simple(0, function()
 		local ply = APA.FindOwner(ent)
-		if APA.Settings.GhostSpawn:GetBool() and ply and IsSafeToGhost(ply,ent) then
+		if APA.Settings.GhostSpawn:GetBool() and IsValid(ply) and IsSafeToGhost(ply,ent) then
 			APA.InitGhost(ent, false, false, true, true)
 		end
 	end)

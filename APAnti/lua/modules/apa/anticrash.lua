@@ -211,5 +211,24 @@ function ents.GetUnreasonables()
 	return ParedEnts
 end
 
+local unfrozenobj = 0
+hook.Add("PlayerUnfrozeObject", "APA-AC-MassUnfreeze", function(_,_,phys)
+	if APA.Settings.AntiCrash:GetBool() and has.MassUnfreeze:GetBool() then
+		unfrozenobj = unfrozenobj + 1   timer.Simple(1, function() unfrozenobj = 0 end)
+
+		timer.Simple(0, function()
+			if unfrozenobj > 25 then
+				for _,ent in next, ents.FindInSphere(phys:GetPos(), 320) do
+					local objects = ent:GetPhysicsObjectCount()
+					for i=1, objects do
+						local physobject = ent:GetPhysicsObjectNum( i - 1 )
+						if IsValid(physobject) and physobject:IsMoveable() then physobject:Sleep() end
+					end
+				end
+			end
+		end)
+	end
+end)
+
 
 APA.initPlugin('anticrash')

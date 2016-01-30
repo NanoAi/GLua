@@ -12,7 +12,8 @@ AntiCrashCMDTable = {
 	EffectPlayers		= {0, "Check player velocity."},
 	VelocityHook 		= {1, "Check entities for unreasonable velocity."},
 	UnreasonableHook 	= {1, "Check entities for unreasonable angles/positions."},
-	NaNCheck 			= {0, "Check and attempt to remove any ragdolls that have NaN/inf positions."}
+	NaNCheck 			= {0, "Check and attempt to remove any ragdolls that have NaN/inf positions."},
+	MassUnfreeze		= {0, "Check if lots of entities are being unfrozen in an area and put them to sleep."}
 }
 -- End config
 

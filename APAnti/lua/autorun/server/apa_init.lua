@@ -13,6 +13,7 @@ APA.Settings = {
 	NoThrow					= {1, "Setting this to 1 will stop people from throwing props."},
 	--- Freezing ---
 	StopMassUnfreeze		= {1, "Setting this to 1 will stop people from unfreezing all their props by double tapping R."},
+	StopRUnfreeze			= {0, "Setting this to 1 will stop people from unfreezing props by tapping R."},
 	FreezeOnHit 			= {1, "Setting this to 1 will freeze props when they hit a player. (Needs AntiPK.)"},
 	FreezeOnDrop 			= {0, "Setting this to 1 will freezes props when a player lets go of them. (Disabled by default.)"},
 	FreezePassive			= {0, "Setting this to 1 will freeze props passivly. (Disabled by default.)"},
